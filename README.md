@@ -1,5 +1,7 @@
 # Ammora DEX
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Ammora is a testnet-first constant-product automated market maker for Base
 Sepolia. The repository is a portfolio implementation of the protocol, testing
 and interface layers required to create pools, provide liquidity and exchange
