@@ -36,6 +36,7 @@ describe('AMM preview math', () => {
   it('applies basis-point slippage safely', () => {
     expect(applySlippage(10_000n, 50)).toBe(9_950n)
     expect(applySlippage(10_000n, -10)).toBe(10_000n)
+    expect(applySlippage(10_000n, 9_999)).toBe(5_000n)
   })
 
   it('selects amounts at the existing pool ratio', () => {

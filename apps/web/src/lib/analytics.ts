@@ -3,7 +3,9 @@ import { ammoraPairEventsAbi } from '../contracts/abis'
 
 export const AMMORA_DEPLOYMENT_BLOCK = 44_638_802n
 export const BASE_BLOCKS_PER_DAY = 43_200n
-export const LOG_BLOCK_CHUNK_SIZE = 9_000n
+// Base's public RPC caps eth_getLogs at 2,000 blocks. Stay below that limit so
+// analytics and wallet history work without requiring a paid archive endpoint.
+export const LOG_BLOCK_CHUNK_SIZE = 1_900n
 export const SWAP_FEE_BPS = 30n
 
 const BPS = 10_000n

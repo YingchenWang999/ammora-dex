@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { isDeploymentConfigured } from '@ammora/contract-config'
 import { useAccount } from 'wagmi'
 import { FaucetPanel } from './components/FaucetPanel'
@@ -30,10 +30,27 @@ function AmmoraExperience({ onConnect, walletReady }: AmmoraExperienceProps) {
   const [curveProgress, setCurveProgress] = useState(0.32)
   const [view, setView] = useState<View>('trade')
   const [networkOpen, setNetworkOpen] = useState(false)
+  const networkSelectorRef = useRef<HTMLDivElement | null>(null)
   const updateCurve = useCallback((progress: number) => setCurveProgress(progress), [])
   const networkState = !isDeploymentConfigured
     ? t('network.configurationPending')
     : pool.error ? t('network.rpcUnavailable') : pool.isLoading ? t('network.syncing') : t('network.live')
+
+  useEffect(() => {
+    if (!networkOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setNetworkOpen(false)
+    }
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!networkSelectorRef.current?.contains(event.target as Node)) setNetworkOpen(false)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape)
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+    }
+  }, [networkOpen])
 
   const changeView = (nextView: View) => {
     setView(nextView)
@@ -46,29 +63,38 @@ function AmmoraExperience({ onConnect, walletReady }: AmmoraExperienceProps) {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" id="top">
+      <a className="skip-link" href="#main-content">{t('common.skipToContent')}</a>
       <header className="site-header">
         <a className="brand" href="#top" aria-label={t('brand.home')}><AmmoraMark /><span>Ammora</span><small>DEX</small></a>
         <nav aria-label={t('nav.primary')}>
           {(['trade', 'pools', 'portfolio', 'activity'] as View[]).map((item) => (
-            <button key={item} className={view === item ? 'is-active' : ''} type="button" onClick={() => changeView(item)}>{t(`nav.${item}`)}</button>
+            <button key={item} className={view === item ? 'is-active' : ''} type="button" aria-pressed={view === item} onClick={() => changeView(item)}>{t(`nav.${item}`)}</button>
           ))}
         </nav>
         <div className="header-actions">
-          <div className="network-selector">
-            <button type="button" onClick={() => setNetworkOpen((open) => !open)} aria-expanded={networkOpen}><span className="network-pulse" />Base Sepolia <span>⌄</span></button>
-            {networkOpen && <div className="network-menu"><span>{t('network.supported')}</span><button type="button"><i className="network-pulse" />Base Sepolia <small>{t('network.active')}</small></button><p>{t('network.onlySupported')}</p></div>}
+          <div className="network-selector" ref={networkSelectorRef}>
+            <button type="button" onClick={() => setNetworkOpen((open) => !open)} aria-expanded={networkOpen} aria-controls="network-menu"><span className="network-pulse" />Base Sepolia <span>⌄</span></button>
+            {networkOpen && <div className="network-menu" id="network-menu"><span>{t('network.supported')}</span><div className="network-menu__active"><i className="network-pulse" />Base Sepolia <small>{t('network.active')}</small></div><p>{t('network.onlySupported')}</p></div>}
           </div>
           <div className="language-switch" role="group" aria-label={t('language.label')}>
             {(['en', 'zh-CN'] as Locale[]).map((option) => <button key={option} type="button" className={locale === option ? 'is-active' : ''} aria-pressed={locale === option} onClick={() => setLocale(option)}>{option === 'en' ? 'EN' : '中'}</button>)}
           </div>
+          <button
+            className="language-toggle-mobile"
+            type="button"
+            aria-label={locale === 'en' ? t('language.switchToChinese') : t('language.switchToEnglish')}
+            onClick={() => setLocale(locale === 'en' ? 'zh-CN' : 'en')}
+          >
+            {locale === 'en' ? '中' : 'EN'}
+          </button>
           <button className="wallet-button" type="button" onClick={onConnect} disabled={!walletReady}>
             {!walletReady ? t('wallet.preview') : isConnected && address ? `${address.slice(0, 5)}…${address.slice(-4)}` : t('wallet.connect')}
           </button>
         </div>
       </header>
 
-      <main id="top">
+      <main id="main-content" tabIndex={-1}>
         <section className="market-rail" aria-label={t('dashboard.marketRail')}>
           <div><span className="network-pulse" /><small>{t('dashboard.network')}</small><strong>Base Sepolia</strong></div>
           <div><small>{t('dashboard.market')}</small><strong>aETH / aUSD</strong></div>

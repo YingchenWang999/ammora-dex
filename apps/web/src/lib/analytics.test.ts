@@ -1,7 +1,7 @@
 import { encodeAbiParameters, encodeEventTopics, parseAbiParameters } from 'viem'
 import { describe, expect, it } from 'vitest'
 import { ammoraSwapEvent } from '../contracts/abis'
-import { calculateAmmoraAnalytics, createBlockRanges, parseAmmoraPairLog } from './analytics'
+import { calculateAmmoraAnalytics, createBlockRanges, LOG_BLOCK_CHUNK_SIZE, parseAmmoraPairLog } from './analytics'
 
 const unit = 10n ** 18n
 
@@ -35,6 +35,7 @@ describe('Ammora onchain analytics', () => {
       { fromBlock: 22n, toBlock: 25n },
     ])
     expect(createBlockRanges(20n, 19n)).toEqual([])
+    expect(LOG_BLOCK_CHUNK_SIZE).toBeLessThanOrEqual(2_000n)
   })
 
   it('decodes a raw Swap event log into typed amounts', () => {

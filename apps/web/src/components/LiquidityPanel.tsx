@@ -103,9 +103,9 @@ export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletRe
           <h1 id="liquidity-title">{t('liquidity.manageTitle')}</h1>
           <p>{t('liquidity.manageSubtitle')}</p>
         </div>
-        <div className="mode-switch" aria-label={t('liquidity.operationAria')}>
-          <button type="button" className={mode === 'add' ? 'is-active' : ''} onClick={() => setMode('add')}>{t('liquidity.add')}</button>
-          <button type="button" className={mode === 'remove' ? 'is-active' : ''} onClick={() => setMode('remove')}>{t('liquidity.remove')}</button>
+        <div className="mode-switch" role="group" aria-label={t('liquidity.operationAria')}>
+          <button type="button" aria-pressed={mode === 'add'} className={mode === 'add' ? 'is-active' : ''} onClick={() => setMode('add')}>{t('liquidity.add')}</button>
+          <button type="button" aria-pressed={mode === 'remove'} className={mode === 'remove' ? 'is-active' : ''} onClick={() => setMode('remove')}>{t('liquidity.remove')}</button>
         </div>
       </div>
 

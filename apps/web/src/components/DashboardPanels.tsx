@@ -63,15 +63,15 @@ export function PoolsDirectory({ pool, analytics, onManage }: PoolProps & Analyt
       </header>
       <div className="pool-table" role="table" aria-label={t('pools.title')}>
         <div className="pool-table__head" role="row">
-          <span>{t('pools.pool')}</span><span>{t('dashboard.tvl')}</span><span>{t('pools.reserves')}</span><span>{t('dashboard.apr')}</span><span>{t('pools.yourShare')}</span><span />
+          <span role="columnheader">{t('pools.pool')}</span><span role="columnheader">{t('dashboard.tvl')}</span><span role="columnheader">{t('pools.reserves')}</span><span role="columnheader">{t('dashboard.apr')}</span><span role="columnheader">{t('pools.yourShare')}</span><span role="columnheader" aria-label={t('pools.manage')} />
         </div>
         <div className="pool-table__row" role="row">
-          <div className="pair-cell"><span className="pair-icons"><i /><i /></span><span><strong>aETH / aUSD</strong><small>Base Sepolia · 0.30%</small></span></div>
-          <strong>{aUsd ? `${formatTokenAmount(aUsd * 2, 0)} aUSD` : '—'}</strong>
-          <span className="reserve-cell"><strong>{formatTokenAmount(aEth, 2)} aETH</strong><small>{formatTokenAmount(aUsd, 0)} aUSD</small></span>
-          <strong title={analytics.error?.message}>{analytics.isLoading || analytics.error ? '—' : `${analytics.aprPercent.toFixed(2)}%`}</strong>
-          <strong>{share}%</strong>
-          <button type="button" className="secondary-action" onClick={onManage}>{t('pools.manage')}</button>
+          <div className="pair-cell" role="cell"><span className="pair-icons"><i /><i /></span><span><strong>aETH / aUSD</strong><small>Base Sepolia · 0.30%</small></span></div>
+          <strong role="cell">{aUsd ? `${formatTokenAmount(aUsd * 2, 0)} aUSD` : '—'}</strong>
+          <span className="reserve-cell" role="cell"><strong>{formatTokenAmount(aEth, 2)} aETH</strong><small>{formatTokenAmount(aUsd, 0)} aUSD</small></span>
+          <strong role="cell" title={analytics.error?.message}>{analytics.isLoading || analytics.error ? '—' : `${analytics.aprPercent.toFixed(2)}%`}</strong>
+          <strong role="cell">{share}%</strong>
+          <span role="cell"><button type="button" className="secondary-action" onClick={onManage}>{t('pools.manage')}</button></span>
         </div>
       </div>
       <div className="contract-links">

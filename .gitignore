@@ -17,6 +17,7 @@ lcov.info
 playwright-report/
 test-results/
 output/playwright/
+.playwright-cli/
 .slither/
 
 # Editors

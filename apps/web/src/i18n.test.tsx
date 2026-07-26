@@ -31,6 +31,8 @@ describe('Ammora internationalization', () => {
     expect(translate('zh-CN', 'dashboard.noSwaps')).toBe('最近 24 小时暂无交易')
     expect(translate('en', 'activity.errorTitle')).toBe('Activity RPC unavailable')
     expect(translate('zh-CN', 'tokenPicker.title')).toBe('选择代币')
+    expect(translate('en', 'language.switchToChinese')).toBe('Switch interface to Chinese')
+    expect(translate('zh-CN', 'common.skipToContent')).toBe('跳到主要内容')
   })
 
   it('switches language, updates the document, and remembers the selection', () => {

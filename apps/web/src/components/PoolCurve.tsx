@@ -31,15 +31,15 @@ export function PoolCurve({ progress, invariant, reserves, rate }: PoolCurveProp
       </div>
 
       <div className="curve-tabs" role="tablist" aria-label={t('poolView.tabs')}>
-        <button className={view === 'depth' ? 'is-active' : ''} type="button" onClick={() => setView('depth')}>
+        <button id="pool-depth-tab" role="tab" aria-selected={view === 'depth'} aria-controls="pool-depth-panel" className={view === 'depth' ? 'is-active' : ''} type="button" onClick={() => setView('depth')}>
           {t('poolView.depth')}
         </button>
-        <button className={view === 'data' ? 'is-active' : ''} type="button" onClick={() => setView('data')}>
+        <button id="pool-data-tab" role="tab" aria-selected={view === 'data'} aria-controls="pool-data-panel" className={view === 'data' ? 'is-active' : ''} type="button" onClick={() => setView('data')}>
           {t('poolView.data')}
         </button>
       </div>
 
-      {view === 'depth' ? <div className="curve-plot" aria-label={t('curve.aria')}>
+      {view === 'depth' ? <div className="curve-plot" id="pool-depth-panel" role="tabpanel" aria-labelledby="pool-depth-tab">
         <svg viewBox="0 0 360 220" role="img" aria-labelledby="curve-description">
           <title id="curve-description">
             {t('curve.description')}
@@ -76,7 +76,7 @@ export function PoolCurve({ progress, invariant, reserves, rate }: PoolCurveProp
         <p className="curve-plot__note">
           {isDeploymentConfigured ? t('poolView.liveCurve') : t('poolView.previewCurve')}
         </p>
-      </div> : <div className="pool-data-grid">
+      </div> : <div className="pool-data-grid" id="pool-data-panel" role="tabpanel" aria-labelledby="pool-data-tab">
         <div><span>{t('curve.reserves')}</span><strong>{reserves}</strong></div>
         <div><span>{t('curve.invariant')}</span><strong>{invariant}</strong></div>
         <div><span>{t('curve.lpFee')}</span><strong>0.30%</strong></div>

@@ -8,7 +8,7 @@ const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'ammora-local-preview
 const rpcUrls = [...new Set([
   import.meta.env.VITE_BASE_SEPOLIA_RPC_URL,
   'https://sepolia.base.org',
-  'https://base-sepolia-rpc.publicnode.com',
+  'https://base-sepolia.drpc.org',
 ].filter((url): url is string => Boolean(url)))]
 
 function baseSepoliaTransport() {

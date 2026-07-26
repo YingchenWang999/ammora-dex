@@ -1,7 +1,7 @@
 import { baseSepoliaDeployment, isDeploymentConfigured } from '@ammora/contract-config'
 import { useQuery } from '@tanstack/react-query'
 import { publicClient } from '../config/wagmi'
-import { ammoraBurnEvent, ammoraMintEvent, ammoraSwapEvent } from '../contracts/abis'
+import { ammoraSwapEvent } from '../contracts/abis'
 import {
   AMMORA_DEPLOYMENT_BLOCK,
   BASE_BLOCKS_PER_DAY,
@@ -21,11 +21,11 @@ export function useAmmoraAnalytics(aUsdReserve: bigint) {
       const rollingStart = latestBlock > BASE_BLOCKS_PER_DAY ? latestBlock - BASE_BLOCKS_PER_DAY + 1n : 0n
       const fromBlock = rollingStart > AMMORA_DEPLOYMENT_BLOCK ? rollingStart : AMMORA_DEPLOYMENT_BLOCK
       const ranges = createBlockRanges(fromBlock, latestBlock)
-      const [swapGroups, mintGroups, burnGroups] = await Promise.all([
-        Promise.all(ranges.map((range) => publicClient.getLogs({ address: baseSepoliaDeployment.pair, event: ammoraSwapEvent, ...range }))),
-        Promise.all(ranges.map((range) => publicClient.getLogs({ address: baseSepoliaDeployment.pair, event: ammoraMintEvent, ...range }))),
-        Promise.all(ranges.map((range) => publicClient.getLogs({ address: baseSepoliaDeployment.pair, event: ammoraBurnEvent, ...range }))),
-      ])
+      const swapGroups = await Promise.all(ranges.map((range) => publicClient.getLogs({
+        address: baseSepoliaDeployment.pair,
+        event: ammoraSwapEvent,
+        ...range,
+      })))
       const logs = swapGroups.flat()
       const aUsdIsToken0 = BigInt(baseSepoliaDeployment.aUsd) < BigInt(baseSepoliaDeployment.aEth)
 
@@ -36,7 +36,6 @@ export function useAmmoraAnalytics(aUsdReserve: bigint) {
           amount0Out: log.args.amount0Out ?? 0n,
           amount1Out: log.args.amount1Out ?? 0n,
         })), aUsdIsToken0, aUsdReserve),
-        liquidityEventCount: mintGroups.flat().length + burnGroups.flat().length,
         fromBlock,
         toBlock: latestBlock,
       }
@@ -48,7 +47,6 @@ export function useAmmoraAnalytics(aUsdReserve: bigint) {
     feesAUsd: query.data?.feesAUsd ?? 0n,
     aprPercent: query.data?.aprPercent ?? 0,
     swapCount: query.data?.swapCount ?? 0,
-    liquidityEventCount: query.data?.liquidityEventCount ?? 0,
     fromBlock: query.data?.fromBlock,
     toBlock: query.data?.toBlock,
     isLoading: query.isLoading,

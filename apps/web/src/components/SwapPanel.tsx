@@ -46,6 +46,7 @@ export function SwapPanel({
   const [pickerTarget, setPickerTarget] = useState<'input' | 'output' | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const pickerTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const settingsRef = useRef<HTMLDivElement | null>(null)
   const inputToken = demoTokens[inputIndex]
   const outputToken = demoTokens[inputIndex === 0 ? 1 : 0]
   const amountIn = parseAmount(amount)
@@ -53,7 +54,7 @@ export function SwapPanel({
   const reserveOut = inputIndex === 0 ? pool.aUsdReserve : pool.aEthReserve
   const balanceIn = inputIndex === 0 ? pool.aEthBalance : pool.aUsdBalance
   const amountOut = getAmountOut(amountIn, reserveIn, reserveOut)
-  const slippageBps = Math.round((Number(slippage) || 0) * 100)
+  const slippageBps = Math.min(Math.max(Math.round((Number(slippage) || 0) * 100), 0), 5_000)
   const amountOutMin = applySlippage(amountOut, slippageBps)
   const numericAmount = Number(amount)
   const numericReserve = Number(formatUnits(reserveIn, 18))
@@ -63,6 +64,22 @@ export function SwapPanel({
   const closeTokenPicker = useCallback(() => setPickerTarget(null), [])
 
   useEffect(() => onProgressChange(curveProgress), [curveProgress, onProgressChange])
+
+  useEffect(() => {
+    if (!settingsOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSettingsOpen(false)
+    }
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!settingsRef.current?.contains(event.target as Node)) setSettingsOpen(false)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape)
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+    }
+  }, [settingsOpen])
 
   const rate = (() => {
     if (amountIn === 0n || amountOut === 0n) return '—'
@@ -105,14 +122,17 @@ export function SwapPanel({
           <h1 id="swap-title">{t('swap.tradeTitle')}</h1>
           <p>{t('swap.subtitle')}</p>
         </div>
-        <div className="settings-wrap">
-          <button className="icon-button" type="button" onClick={() => setSettingsOpen((open) => !open)} aria-expanded={settingsOpen} aria-label={t('swap.settings')}>⚙</button>
-          {settingsOpen && <section className="trade-settings" aria-label={t('swap.settings')}>
+        <div className="settings-wrap" ref={settingsRef}>
+          <button className="icon-button" type="button" onClick={() => setSettingsOpen((open) => !open)} aria-expanded={settingsOpen} aria-controls="trade-settings" aria-label={t('swap.settings')}>⚙</button>
+          {settingsOpen && <section className="trade-settings" id="trade-settings" aria-label={t('swap.settings')}>
             <header><strong>{t('swap.settings')}</strong><button type="button" onClick={() => setSettingsOpen(false)} aria-label={t('common.close')}>×</button></header>
             <span>{t('swap.slippage')}</span>
             <div className="slippage-presets">
               {['0.10', '0.50', '1.00'].map((value) => <button key={value} className={slippage === value ? 'is-active' : ''} type="button" onClick={() => setSlippage(value)}>{value}%</button>)}
-              <label><input aria-label={t('swap.slippageAria')} inputMode="decimal" value={slippage} onChange={(event) => setSlippage(sanitizeDecimalInput(event.target.value, 2))} />%</label>
+              <label><input aria-label={t('swap.slippageAria')} inputMode="decimal" value={slippage} onChange={(event) => {
+                const clean = sanitizeDecimalInput(event.target.value, 2)
+                setSlippage(Number(clean) > 50 ? '50' : clean)
+              }} />%</label>
             </div>
             <div className="deadline-row"><span>{t('swap.deadline')}</span><strong>20 {t('swap.minutes')}</strong></div>
           </section>}
@@ -132,7 +152,7 @@ export function SwapPanel({
             value={amount}
             onChange={(event) => setAmount(sanitizeDecimalInput(event.target.value))}
           />
-          <button className="token-select" type="button" onClick={(event) => {
+          <button className="token-select" type="button" aria-label={`${t('tokenPicker.title')}: ${inputToken.symbol}`} onClick={(event) => {
             pickerTriggerRef.current = event.currentTarget
             setPickerTarget('input')
           }}>
@@ -164,7 +184,7 @@ export function SwapPanel({
           <output aria-label={t('swap.estimatedAria', { symbol: outputToken.symbol })}>
             {formatTokenAmount(Number(formatUnits(amountOut, 18)), 6)}
           </output>
-          <button className="token-select" type="button" onClick={(event) => {
+          <button className="token-select" type="button" aria-label={`${t('tokenPicker.title')}: ${outputToken.symbol}`} onClick={(event) => {
             pickerTriggerRef.current = event.currentTarget
             setPickerTarget('output')
           }}>
