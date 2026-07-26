@@ -22,3 +22,7 @@ Do not publish an exploitable report before a fix is available.
 - No flash-swap callback in the initial release.
 - Fee-on-transfer and rebasing tokens are intentionally unsupported.
 - Slippage bounds and transaction deadlines are enforced by the router.
+- Demo-token public minting is fixed per token and limited to one claim per
+  address every 24 hours; those tokens have no value.
+- The deployment owner retains test-token mint authority for testnet liquidity
+  maintenance. This is not an acceptable production token model.

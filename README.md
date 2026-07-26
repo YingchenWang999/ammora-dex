@@ -26,7 +26,9 @@ ammora-dex/
 - 0.30% swap fee retained by liquidity providers
 - Exact-input, single-hop swaps in the initial router
 - Slippage and deadline protection
+- Rate-limited aETH and aUSD test-token faucets
 - Unit, fuzz and invariant-oriented Foundry tests
+- Live swap, liquidity and portfolio state in the React interface
 
 The first release deliberately excludes fee-on-transfer tokens, rebasing
 tokens, flash swaps, multi-hop routing and mainnet deployment.
@@ -36,7 +38,7 @@ tokens, flash swaps, multi-hop routing and mainnet deployment.
 - Solidity 0.8.36, Foundry 1.7 and OpenZeppelin Contracts 5.6
 - React 18.3, TypeScript 5.9 and Vite 7
 - Reown AppKit, Wagmi 3, Viem 2 and TanStack Query 5
-- pnpm workspace, SCSS Modules and GitHub Actions
+- pnpm workspace, SCSS and GitHub Actions
 
 ## Local development
 
@@ -55,14 +57,37 @@ Run only the contracts:
 pnpm contract:test
 ```
 
+The interface reads the deployment values from the repository-level
+`.env.local`. The five contract addresses enable live pool reads; the Reown
+project ID separately enables wallet connections and transactions.
+
+## Base Sepolia deployment
+
+Use a dedicated, funded Base Sepolia deployment wallet. Set the variables in
+your local shell; never paste a private key into a committed file or a
+`VITE_`-prefixed variable.
+
+```bash
+export BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+export BASESCAN_API_KEY=your_basescan_key
+export PRIVATE_KEY=your_dedicated_testnet_private_key
+pnpm contract:deploy:base-sepolia
+```
+
+The deployment is broadcast sequentially and performs the full setup in one
+run: factory, router, aETH, aUSD, pair creation and initial liquidity. Copy the
+five logged addresses into `.env.local`, then run `pnpm check` again.
+
 ## Deployment model
 
 The contracts will be deployed and verified on Base Sepolia. The static web
 application will be deployed to Vercel. Contract addresses are provided through
-environment variables and the shared `@ammora/contract-config` package.
+environment variables and the shared `@ammora/contract-config` package, so no
+application server or database is required.
 
 ## Status
 
-This repository currently contains the initial protocol and application
-framework. Testnet deployment addresses will be added after the contract review
-and deployment gate are complete.
+The implementation is feature-complete for its portfolio testnet scope. Local
+end-to-end validation covers deployment, faucet claims, swaps, adding liquidity
+and removing liquidity. Public Base Sepolia and Vercel URLs are populated only
+after the deployment credentials and external project configuration are ready.

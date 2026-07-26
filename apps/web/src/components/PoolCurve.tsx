@@ -1,8 +1,10 @@
 type PoolCurveProps = {
   progress: number
+  invariant: string
+  reserves: string
 }
 
-export function PoolCurve({ progress }: PoolCurveProps) {
+export function PoolCurve({ progress, invariant, reserves }: PoolCurveProps) {
   const clamped = Math.min(Math.max(progress, 0), 1)
   const markerX = 94 + clamped * 168
   const markerY = 174 - Math.sqrt(clamped) * 104
@@ -11,16 +13,16 @@ export function PoolCurve({ progress }: PoolCurveProps) {
     <section className="curve-panel" aria-labelledby="curve-title">
       <div className="curve-panel__header">
         <div>
-          <span className="eyebrow">Pool mechanics</span>
+          <span className="eyebrow">Live pool mechanics</span>
           <h2 id="curve-title">Reserves move. The product holds.</h2>
         </div>
         <span className="curve-panel__formula">x · y = k</span>
       </div>
 
-      <div className="curve-plot" aria-label="Constant-product reserve curve preview">
+      <div className="curve-plot" aria-label="Constant-product reserve curve">
         <svg viewBox="0 0 360 220" role="img" aria-labelledby="curve-description">
           <title id="curve-description">
-            A constant-product curve with a marker that responds to the entered swap amount.
+            The Ammora constant-product curve with a marker that responds to the entered swap amount.
           </title>
           <defs>
             <linearGradient id="curveStroke" x1="0" y1="1" x2="1" y2="0">
@@ -56,15 +58,15 @@ export function PoolCurve({ progress }: PoolCurveProps) {
       <div className="curve-metrics">
         <div>
           <span>Invariant</span>
-          <strong>37.2M</strong>
+          <strong>{invariant}</strong>
         </div>
         <div>
           <span>LP fee</span>
           <strong>0.30%</strong>
         </div>
         <div>
-          <span>Route</span>
-          <strong>Direct</strong>
+          <span>Reserves</span>
+          <strong>{reserves}</strong>
         </div>
       </div>
     </section>

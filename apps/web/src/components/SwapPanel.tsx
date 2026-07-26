@@ -1,69 +1,89 @@
 import { useEffect, useState } from 'react'
-import { isDeploymentConfigured } from '@ammora/contract-config'
-import { formatTokenAmount, getPreviewAmountOut, getPriceImpact } from '../lib/amm'
-
-type Token = {
-  symbol: string
-  name: string
-  accent: string
-}
-
-const A_ETH: Token = { symbol: 'aETH', name: 'Ammora ETH', accent: '#2c57ff' }
-const A_USD: Token = { symbol: 'aUSD', name: 'Ammora USD', accent: '#53d8c9' }
+import { demoTokens, isDeploymentConfigured } from '@ammora/contract-config'
+import { formatUnits, parseUnits } from 'viem'
+import type { AmmoraActions } from '../hooks/useAmmoraActions'
+import type { AmmoraPoolState } from '../hooks/useAmmoraPool'
+import { applySlippage, formatTokenAmount, getAmountOut, getPriceImpact } from '../lib/amm'
+import { TransactionStatus } from './TransactionStatus'
 
 type SwapPanelProps = {
+  actions: AmmoraActions
   onProgressChange: (progress: number) => void
   onConnect: () => void
-  address?: string
+  pool: AmmoraPoolState
   isConnected: boolean
   walletReady: boolean
 }
 
+function parseAmount(value: string): bigint {
+  try {
+    return value && Number(value) > 0 ? parseUnits(value, 18) : 0n
+  } catch {
+    return 0n
+  }
+}
+
 export function SwapPanel({
+  actions,
   onProgressChange,
   onConnect,
-  address,
+  pool,
   isConnected,
   walletReady,
 }: SwapPanelProps) {
-  const [amount, setAmount] = useState('1.25')
-  const [inputToken, setInputToken] = useState(A_ETH)
-  const [outputToken, setOutputToken] = useState(A_USD)
+  const [amount, setAmount] = useState('1')
+  const [inputIndex, setInputIndex] = useState<0 | 1>(0)
   const [slippage, setSlippage] = useState('0.50')
-
-  const isEthInput = inputToken.symbol === 'aETH'
-  const reserveIn = isEthInput ? 120 : 310_000
-  const reserveOut = isEthInput ? 310_000 : 120
+  const inputToken = demoTokens[inputIndex]
+  const outputToken = demoTokens[inputIndex === 0 ? 1 : 0]
+  const amountIn = parseAmount(amount)
+  const reserveIn = inputIndex === 0 ? pool.aEthReserve : pool.aUsdReserve
+  const reserveOut = inputIndex === 0 ? pool.aUsdReserve : pool.aEthReserve
+  const balanceIn = inputIndex === 0 ? pool.aEthBalance : pool.aUsdBalance
+  const amountOut = getAmountOut(amountIn, reserveIn, reserveOut)
+  const slippageBps = Math.round((Number(slippage) || 0) * 100)
+  const amountOutMin = applySlippage(amountOut, slippageBps)
   const numericAmount = Number(amount)
-  const amountOut = getPreviewAmountOut(numericAmount, reserveIn, reserveOut)
-  const priceImpact = getPriceImpact(numericAmount, reserveIn)
-  const curveProgress = Math.min(Math.max(numericAmount / (reserveIn * 0.12), 0), 1)
+  const numericReserve = Number(formatUnits(reserveIn, 18))
+  const priceImpact = getPriceImpact(numericAmount, numericReserve)
+  const curveProgress = Math.min(Math.max(numericAmount / Math.max(numericReserve * 0.12, 1), 0), 1)
+  const insufficientBalance = amountIn > balanceIn
 
   useEffect(() => onProgressChange(curveProgress), [curveProgress, onProgressChange])
 
-  const swapDirection = () => {
-    setInputToken(outputToken)
-    setOutputToken(inputToken)
-    setAmount(amountOut ? formatTokenAmount(amountOut, 4) : '')
+  const rate = (() => {
+    if (amountIn === 0n || amountOut === 0n) return '—'
+    return formatTokenAmount(Number(formatUnits(amountOut, 18)) / Number(formatUnits(amountIn, 18)), 5)
+  })()
+
+  const reverseDirection = () => {
+    setInputIndex((current) => (current === 0 ? 1 : 0))
+    if (amountOut > 0n) setAmount(formatTokenAmount(Number(formatUnits(amountOut, 18)), 6))
+    actions.clearStatus()
   }
 
   const actionLabel = !walletReady
     ? 'Add Reown project ID'
     : !isConnected
-    ? 'Connect wallet'
-    : !isDeploymentConfigured
-      ? 'Testnet deployment pending'
-      : 'Review swap'
+      ? 'Connect wallet'
+      : !isDeploymentConfigured
+        ? 'Testnet deployment pending'
+        : insufficientBalance
+          ? `Insufficient ${inputToken.symbol}`
+          : actions.busy
+            ? 'Transaction in progress…'
+            : `Swap ${inputToken.symbol}`
 
-  const handleAction = () => {
-    if (walletReady && !isConnected) onConnect()
+  const submit = () => {
+    if (!isConnected) return onConnect()
+    if (amountIn > 0n && amountOutMin > 0n) actions.swap(inputIndex, amountIn, amountOutMin)
   }
 
   return (
     <section className="swap-card" aria-labelledby="swap-title">
       <div className="swap-card__header">
         <div>
-          <span className="eyebrow">Trade</span>
+          <span className="eyebrow">Live trade</span>
           <h1 id="swap-title">Move value, not trust.</h1>
         </div>
         <label className="slippage-control">
@@ -73,7 +93,7 @@ export function SwapPanel({
               aria-label="Slippage tolerance"
               inputMode="decimal"
               value={slippage}
-              onChange={(event) => setSlippage(event.target.value)}
+              onChange={(event) => setSlippage(event.target.value.replace(/[^0-9.]/g, ''))}
             />
             %
           </span>
@@ -83,7 +103,7 @@ export function SwapPanel({
       <div className="token-field token-field--input">
         <div className="token-field__label">
           <span>You pay</span>
-          <span>Preview balance · 8.42</span>
+          <span>Balance · {formatTokenAmount(Number(formatUnits(balanceIn, 18)), 4)}</span>
         </div>
         <div className="token-field__control">
           <input
@@ -93,69 +113,65 @@ export function SwapPanel({
             value={amount}
             onChange={(event) => setAmount(event.target.value.replace(/[^0-9.]/g, ''))}
           />
-          <button className="token-select" type="button" aria-label={`Selected ${inputToken.name}`}>
+          <button className="token-select" type="button" onClick={reverseDirection}>
             <span className="token-dot" style={{ backgroundColor: inputToken.accent }} />
             {inputToken.symbol}
             <span aria-hidden="true">⌄</span>
           </button>
         </div>
-        <span className="token-field__fiat">≈ ${formatTokenAmount(numericAmount * 2_580, 2)}</span>
+        <button
+          className="balance-shortcut"
+          type="button"
+          onClick={() => setAmount(formatUnits(balanceIn, 18))}
+          disabled={!isConnected || balanceIn === 0n}
+        >
+          Use max
+        </button>
       </div>
 
-      <button className="direction-button" type="button" onClick={swapDirection} aria-label="Reverse swap direction">
+      <button className="direction-button" type="button" onClick={reverseDirection} aria-label="Reverse swap direction">
         <span aria-hidden="true">↓</span>
       </button>
 
       <div className="token-field token-field--output">
         <div className="token-field__label">
           <span>You receive</span>
-          <span>Preview balance · 12,480</span>
+          <span>Live pool quote</span>
         </div>
         <div className="token-field__control">
           <output aria-label={`Estimated ${outputToken.symbol} received`}>
-            {formatTokenAmount(amountOut, 4)}
+            {formatTokenAmount(Number(formatUnits(amountOut, 18)), 6)}
           </output>
-          <button className="token-select" type="button" aria-label={`Selected ${outputToken.name}`}>
+          <button className="token-select" type="button" onClick={reverseDirection}>
             <span className="token-dot" style={{ backgroundColor: outputToken.accent }} />
             {outputToken.symbol}
             <span aria-hidden="true">⌄</span>
           </button>
         </div>
-        <span className="token-field__fiat">Preview quote · no transaction will be sent</span>
+        <span className="token-field__fiat">Minimum received · {formatTokenAmount(Number(formatUnits(amountOutMin, 18)), 6)}</span>
       </div>
 
       <dl className="trade-details">
-        <div>
-          <dt>Rate</dt>
-          <dd>1 {inputToken.symbol} = {formatTokenAmount(amountOut / numericAmount || 0, 4)} {outputToken.symbol}</dd>
-        </div>
-        <div>
-          <dt>Price impact</dt>
-          <dd className={priceImpact > 2 ? 'is-warning' : ''}>{formatTokenAmount(priceImpact, 2)}%</dd>
-        </div>
-        <div>
-          <dt>Minimum received</dt>
-          <dd>{formatTokenAmount(amountOut * (1 - (Number(slippage) || 0) / 100), 4)} {outputToken.symbol}</dd>
-        </div>
+        <div><dt>Rate</dt><dd>1 {inputToken.symbol} = {rate} {outputToken.symbol}</dd></div>
+        <div><dt>Price impact</dt><dd className={priceImpact > 2 ? 'is-warning' : ''}>{formatTokenAmount(priceImpact, 2)}%</dd></div>
+        <div><dt>LP fee</dt><dd>0.30%</dd></div>
       </dl>
+
+      <TransactionStatus status={actions.status} />
 
       <button
         className="primary-action"
         type="button"
-        onClick={handleAction}
-        disabled={!walletReady || (isConnected && !isDeploymentConfigured)}
+        onClick={submit}
+        disabled={
+          !walletReady ||
+          actions.busy ||
+          (isConnected && (!isDeploymentConfigured || amountIn === 0n || amountOut === 0n || insufficientBalance))
+        }
       >
-        {actionLabel}
-        <span aria-hidden="true">↗</span>
+        {actionLabel}<span aria-hidden="true">↗</span>
       </button>
-
-      <p className="wallet-caption">
-        {!walletReady
-          ? 'Set VITE_REOWN_PROJECT_ID to enable wallet connections'
-          : isConnected && address
-          ? `Connected · ${address.slice(0, 6)}…${address.slice(-4)}`
-          : 'Base Sepolia · Wallet actions remain under your control'}
-      </p>
+      <p className="wallet-caption">Approvals and swaps are confirmed separately in your wallet.</p>
     </section>
   )
 }

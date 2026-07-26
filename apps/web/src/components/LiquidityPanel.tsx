@@ -1,0 +1,137 @@
+import { useState } from 'react'
+import { demoTokens, isDeploymentConfigured } from '@ammora/contract-config'
+import { formatUnits, parseUnits } from 'viem'
+import type { AmmoraActions } from '../hooks/useAmmoraActions'
+import type { AmmoraPoolState } from '../hooks/useAmmoraPool'
+import { applySlippage, formatTokenAmount } from '../lib/amm'
+import { TransactionStatus } from './TransactionStatus'
+
+type LiquidityPanelProps = {
+  actions: AmmoraActions
+  isConnected: boolean
+  onConnect: () => void
+  pool: AmmoraPoolState
+  walletReady: boolean
+}
+
+function parseAmount(value: string): bigint {
+  try {
+    return value && Number(value) > 0 ? parseUnits(value, 18) : 0n
+  } catch {
+    return 0n
+  }
+}
+
+export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletReady }: LiquidityPanelProps) {
+  const [mode, setMode] = useState<'add' | 'remove'>('add')
+  const [aEthAmount, setAEthAmount] = useState('1')
+  const [aUsdAmount, setAUsdAmount] = useState('2580')
+  const [removePercent, setRemovePercent] = useState(50)
+  const aEth = parseAmount(aEthAmount)
+  const aUsd = parseAmount(aUsdAmount)
+  const liquidity = (pool.lpBalance * BigInt(removePercent)) / 100n
+  const estimatedAEth = pool.totalSupply > 0n ? (liquidity * pool.aEthReserve) / pool.totalSupply : 0n
+  const estimatedAUsd = pool.totalSupply > 0n ? (liquidity * pool.aUsdReserve) / pool.totalSupply : 0n
+  const poolShare = pool.totalSupply > 0n
+    ? (Number(pool.lpBalance * 1_000_000n / pool.totalSupply) / 10_000).toFixed(4)
+    : '0.0000'
+  const canAdd = aEth > 0n && aUsd > 0n && aEth <= pool.aEthBalance && aUsd <= pool.aUsdBalance
+  const canRemove = liquidity > 0n
+
+  const ratio = (() => {
+    if (pool.aEthReserve === 0n) return 0
+    return Number(formatUnits(pool.aUsdReserve, 18)) / Number(formatUnits(pool.aEthReserve, 18))
+  })()
+
+  const updateAEth = (value: string) => {
+    const clean = value.replace(/[^0-9.]/g, '')
+    setAEthAmount(clean)
+    if (ratio > 0 && clean) setAUsdAmount(formatTokenAmount(Number(clean) * ratio, 6))
+  }
+
+  const submit = () => {
+    if (!isConnected) return onConnect()
+    if (mode === 'add' && canAdd) {
+      actions.addLiquidity(aEth, aUsd, applySlippage(aEth, 50), applySlippage(aUsd, 50))
+    } else if (mode === 'remove' && canRemove) {
+      actions.removeLiquidity(liquidity, applySlippage(estimatedAEth, 50), applySlippage(estimatedAUsd, 50))
+    }
+  }
+
+  const actionLabel = !walletReady
+    ? 'Add Reown project ID'
+    : !isConnected
+      ? 'Connect wallet'
+      : !isDeploymentConfigured
+        ? 'Testnet deployment pending'
+        : actions.busy
+          ? 'Transaction in progress…'
+          : mode === 'add' ? 'Add liquidity' : 'Remove liquidity'
+
+  return (
+    <section className="swap-card liquidity-card" aria-labelledby="liquidity-title">
+      <div className="swap-card__header">
+        <div>
+          <span className="eyebrow">LP position</span>
+          <h1 id="liquidity-title">Fund the curve.</h1>
+        </div>
+        <div className="mode-switch" aria-label="Liquidity operation">
+          <button type="button" className={mode === 'add' ? 'is-active' : ''} onClick={() => setMode('add')}>Add</button>
+          <button type="button" className={mode === 'remove' ? 'is-active' : ''} onClick={() => setMode('remove')}>Remove</button>
+        </div>
+      </div>
+
+      {mode === 'add' ? (
+        <div className="liquidity-inputs">
+          <label className="liquidity-field">
+            <span><span>aETH deposit</span><small>Balance · {formatTokenAmount(Number(formatUnits(pool.aEthBalance, 18)), 4)}</small></span>
+            <span><input value={aEthAmount} inputMode="decimal" onChange={(event) => updateAEth(event.target.value)} /><b><i style={{ background: demoTokens[0].accent }} />aETH</b></span>
+          </label>
+          <div className="liquidity-plus" aria-hidden="true">+</div>
+          <label className="liquidity-field">
+            <span><span>aUSD deposit</span><small>Balance · {formatTokenAmount(Number(formatUnits(pool.aUsdBalance, 18)), 4)}</small></span>
+            <span><input value={aUsdAmount} inputMode="decimal" onChange={(event) => setAUsdAmount(event.target.value.replace(/[^0-9.]/g, ''))} /><b><i style={{ background: demoTokens[1].accent }} />aUSD</b></span>
+          </label>
+          <p className="liquidity-hint">The current pool ratio is {formatTokenAmount(ratio, 4)} aUSD per aETH. Unused tokens remain in your wallet.</p>
+        </div>
+      ) : (
+        <div className="remove-position">
+          <div className="position-summary">
+            <span>Your pool share</span>
+            <strong>{poolShare}%</strong>
+            <small>{formatTokenAmount(Number(formatUnits(pool.lpBalance, 18)), 6)} AMM-LP</small>
+          </div>
+          <input
+            className="position-range"
+            type="range"
+            min="1"
+            max="100"
+            value={removePercent}
+            onChange={(event) => setRemovePercent(Number(event.target.value))}
+            aria-label="Percentage of liquidity to remove"
+          />
+          <div className="percentage-row">
+            {[25, 50, 75, 100].map((percent) => (
+              <button key={percent} type="button" className={removePercent === percent ? 'is-active' : ''} onClick={() => setRemovePercent(percent)}>{percent}%</button>
+            ))}
+          </div>
+          <dl className="withdraw-preview">
+            <div><dt>Receive aETH</dt><dd>{formatTokenAmount(Number(formatUnits(estimatedAEth, 18)), 6)}</dd></div>
+            <div><dt>Receive aUSD</dt><dd>{formatTokenAmount(Number(formatUnits(estimatedAUsd, 18)), 6)}</dd></div>
+          </dl>
+        </div>
+      )}
+
+      <TransactionStatus status={actions.status} />
+      <button
+        className="primary-action"
+        type="button"
+        onClick={submit}
+        disabled={!walletReady || actions.busy || (isConnected && (!isDeploymentConfigured || (mode === 'add' ? !canAdd : !canRemove)))}
+      >
+        {actionLabel}<span aria-hidden="true">↗</span>
+      </button>
+      <p className="wallet-caption">A 0.50% minimum-amount guard is applied to liquidity transactions.</p>
+    </section>
+  )
+}
