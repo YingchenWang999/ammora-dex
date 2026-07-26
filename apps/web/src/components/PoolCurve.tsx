@@ -1,11 +1,17 @@
+import { useState } from 'react'
+import { isDeploymentConfigured } from '@ammora/contract-config'
+import { useI18n } from '../i18n'
+
 type PoolCurveProps = {
   progress: number
   invariant: string
   reserves: string
+  rate: string
 }
 
-export function PoolCurve({ progress, invariant, reserves }: PoolCurveProps) {
+export function PoolCurve({ progress, invariant, reserves, rate }: PoolCurveProps) {
   const { t } = useI18n()
+  const [view, setView] = useState<'depth' | 'data'>('depth')
   const clamped = Math.min(Math.max(progress, 0), 1)
   const markerX = 94 + clamped * 168
   const markerY = 174 - Math.sqrt(clamped) * 104
@@ -14,13 +20,26 @@ export function PoolCurve({ progress, invariant, reserves }: PoolCurveProps) {
     <section className="curve-panel" aria-labelledby="curve-title">
       <div className="curve-panel__header">
         <div>
-          <span className="eyebrow">{t('curve.eyebrow')}</span>
-          <h2 id="curve-title">{t('curve.title')}</h2>
+          <span className="eyebrow">{t('poolView.eyebrow')}</span>
+          <h2 id="curve-title">aETH / aUSD</h2>
+          <p>{t('poolView.subtitle')}</p>
         </div>
-        <span className="curve-panel__formula">x · y = k</span>
+        <div className="curve-panel__rate">
+          <span>{t('poolView.spotRate')}</span>
+          <strong>{rate}</strong>
+        </div>
       </div>
 
-      <div className="curve-plot" aria-label={t('curve.aria')}>
+      <div className="curve-tabs" role="tablist" aria-label={t('poolView.tabs')}>
+        <button className={view === 'depth' ? 'is-active' : ''} type="button" onClick={() => setView('depth')}>
+          {t('poolView.depth')}
+        </button>
+        <button className={view === 'data' ? 'is-active' : ''} type="button" onClick={() => setView('data')}>
+          {t('poolView.data')}
+        </button>
+      </div>
+
+      {view === 'depth' ? <div className="curve-plot" aria-label={t('curve.aria')}>
         <svg viewBox="0 0 360 220" role="img" aria-labelledby="curve-description">
           <title id="curve-description">
             {t('curve.description')}
@@ -54,7 +73,15 @@ export function PoolCurve({ progress, invariant, reserves }: PoolCurveProps) {
           <text className="curve-axis" x="286" y="207">{t('curve.aethReserve')}</text>
           <text className="curve-axis" x="9" y="18">aUSD</text>
         </svg>
-      </div>
+        <p className="curve-plot__note">
+          {isDeploymentConfigured ? t('poolView.liveCurve') : t('poolView.previewCurve')}
+        </p>
+      </div> : <div className="pool-data-grid">
+        <div><span>{t('curve.reserves')}</span><strong>{reserves}</strong></div>
+        <div><span>{t('curve.invariant')}</span><strong>{invariant}</strong></div>
+        <div><span>{t('curve.lpFee')}</span><strong>0.30%</strong></div>
+        <div><span>{t('poolView.contractState')}</span><strong>{isDeploymentConfigured ? t('common.ready') : t('common.pending')}</strong></div>
+      </div>}
 
       <div className="curve-metrics">
         <div>
@@ -73,4 +100,3 @@ export function PoolCurve({ progress, invariant, reserves }: PoolCurveProps) {
     </section>
   )
 }
-import { useI18n } from '../i18n'

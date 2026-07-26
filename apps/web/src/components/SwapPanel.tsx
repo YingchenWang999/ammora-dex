@@ -6,6 +6,7 @@ import type { AmmoraPoolState } from '../hooks/useAmmoraPool'
 import { applySlippage, formatTokenAmount, getAmountOut, getPriceImpact } from '../lib/amm'
 import { useI18n } from '../i18n'
 import { TransactionStatus } from './TransactionStatus'
+import { TokenPicker } from './TokenPicker'
 
 type SwapPanelProps = {
   actions: AmmoraActions
@@ -36,6 +37,8 @@ export function SwapPanel({
   const [amount, setAmount] = useState('1')
   const [inputIndex, setInputIndex] = useState<0 | 1>(0)
   const [slippage, setSlippage] = useState('0.50')
+  const [pickerTarget, setPickerTarget] = useState<'input' | 'output' | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const inputToken = demoTokens[inputIndex]
   const outputToken = demoTokens[inputIndex === 0 ? 1 : 0]
   const amountIn = parseAmount(amount)
@@ -64,6 +67,11 @@ export function SwapPanel({
     actions.clearStatus()
   }
 
+  const selectToken = (index: 0 | 1) => {
+    setInputIndex(pickerTarget === 'output' ? (index === 0 ? 1 : 0) : index)
+    actions.clearStatus()
+  }
+
   const actionLabel = !walletReady
     ? t('swap.addProjectId')
     : !isConnected
@@ -86,20 +94,21 @@ export function SwapPanel({
       <div className="swap-card__header">
         <div>
           <span className="eyebrow">{t('swap.eyebrow')}</span>
-          <h1 id="swap-title">{t('swap.title')}</h1>
+          <h1 id="swap-title">{t('swap.tradeTitle')}</h1>
+          <p>{t('swap.subtitle')}</p>
         </div>
-        <label className="slippage-control">
-          <span>{t('swap.slippage')}</span>
-          <span className="slippage-control__input">
-            <input
-              aria-label={t('swap.slippageAria')}
-              inputMode="decimal"
-              value={slippage}
-              onChange={(event) => setSlippage(event.target.value.replace(/[^0-9.]/g, ''))}
-            />
-            %
-          </span>
-        </label>
+        <div className="settings-wrap">
+          <button className="icon-button" type="button" onClick={() => setSettingsOpen((open) => !open)} aria-expanded={settingsOpen} aria-label={t('swap.settings')}>⚙</button>
+          {settingsOpen && <section className="trade-settings" aria-label={t('swap.settings')}>
+            <header><strong>{t('swap.settings')}</strong><button type="button" onClick={() => setSettingsOpen(false)} aria-label={t('common.close')}>×</button></header>
+            <span>{t('swap.slippage')}</span>
+            <div className="slippage-presets">
+              {['0.10', '0.50', '1.00'].map((value) => <button key={value} className={slippage === value ? 'is-active' : ''} type="button" onClick={() => setSlippage(value)}>{value}%</button>)}
+              <label><input aria-label={t('swap.slippageAria')} inputMode="decimal" value={slippage} onChange={(event) => setSlippage(event.target.value.replace(/[^0-9.]/g, ''))} />%</label>
+            </div>
+            <div className="deadline-row"><span>{t('swap.deadline')}</span><strong>20 {t('swap.minutes')}</strong></div>
+          </section>}
+        </div>
       </div>
 
       <div className="token-field token-field--input">
@@ -115,7 +124,7 @@ export function SwapPanel({
             value={amount}
             onChange={(event) => setAmount(event.target.value.replace(/[^0-9.]/g, ''))}
           />
-          <button className="token-select" type="button" onClick={reverseDirection}>
+          <button className="token-select" type="button" onClick={() => setPickerTarget('input')}>
             <span className="token-dot" style={{ backgroundColor: inputToken.accent }} />
             {inputToken.symbol}
             <span aria-hidden="true">⌄</span>
@@ -144,7 +153,7 @@ export function SwapPanel({
           <output aria-label={t('swap.estimatedAria', { symbol: outputToken.symbol })}>
             {formatTokenAmount(Number(formatUnits(amountOut, 18)), 6)}
           </output>
-          <button className="token-select" type="button" onClick={reverseDirection}>
+          <button className="token-select" type="button" onClick={() => setPickerTarget('output')}>
             <span className="token-dot" style={{ backgroundColor: outputToken.accent }} />
             {outputToken.symbol}
             <span aria-hidden="true">⌄</span>
@@ -158,6 +167,11 @@ export function SwapPanel({
         <div><dt>{t('swap.priceImpact')}</dt><dd className={priceImpact > 2 ? 'is-warning' : ''}>{formatTokenAmount(priceImpact, 2)}%</dd></div>
         <div><dt>{t('swap.lpFee')}</dt><dd>0.30%</dd></div>
       </dl>
+
+      <div className="trade-route" aria-label={t('swap.route')}>
+        <span>{t('swap.route')}</span>
+        <div><strong>{inputToken.symbol}</strong><i>→</i><em>{t('swap.ammoraPool')}</em><i>→</i><strong>{outputToken.symbol}</strong></div>
+      </div>
 
       <TransactionStatus status={actions.status} />
 
@@ -174,6 +188,13 @@ export function SwapPanel({
         {actionLabel}<span aria-hidden="true">↗</span>
       </button>
       <p className="wallet-caption">{t('swap.caption')}</p>
+      <TokenPicker
+        balances={[pool.aEthBalance, pool.aUsdBalance]}
+        open={pickerTarget !== null}
+        selectedIndex={pickerTarget === 'output' ? (inputIndex === 0 ? 1 : 0) : inputIndex}
+        onClose={() => setPickerTarget(null)}
+        onSelect={selectToken}
+      />
     </section>
   )
 }

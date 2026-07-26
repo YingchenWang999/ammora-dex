@@ -75,7 +75,8 @@ export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletRe
       <div className="swap-card__header">
         <div>
           <span className="eyebrow">{t('liquidity.eyebrow')}</span>
-          <h1 id="liquidity-title">{t('liquidity.title')}</h1>
+          <h1 id="liquidity-title">{t('liquidity.manageTitle')}</h1>
+          <p>{t('liquidity.manageSubtitle')}</p>
         </div>
         <div className="mode-switch" aria-label={t('liquidity.operationAria')}>
           <button type="button" className={mode === 'add' ? 'is-active' : ''} onClick={() => setMode('add')}>{t('liquidity.add')}</button>

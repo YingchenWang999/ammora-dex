@@ -24,6 +24,13 @@ describe('Ammora internationalization', () => {
     expect(translate('zh-CN', 'swap.insufficient', { symbol: 'aETH' })).toBe('aETH 余额不足')
   })
 
+  it('covers the dashboard navigation and honest analytics states in both languages', () => {
+    expect(translate('en', 'nav.portfolio')).toBe('Portfolio')
+    expect(translate('zh-CN', 'nav.activity')).toBe('记录')
+    expect(translate('en', 'dashboard.indexerRequired')).toBe('Indexer required')
+    expect(translate('zh-CN', 'tokenPicker.title')).toBe('选择代币')
+  })
+
   it('switches language, updates the document, and remembers the selection', () => {
     window.localStorage.setItem('ammora-locale', 'en')
     render(<I18nProvider><LanguageFixture /></I18nProvider>)

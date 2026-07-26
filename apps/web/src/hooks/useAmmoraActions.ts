@@ -13,6 +13,14 @@ export type TransactionStatus = {
   hash?: Hash
 }
 
+export type ActivityItem = {
+  id: string
+  kind: 'claim' | 'swap' | 'add' | 'remove'
+  symbol?: string
+  hash: Hash
+  timestamp: number
+}
+
 const initialStatus: TransactionStatus = { tone: 'idle', message: '' }
 
 type Translate = (key: TranslationKey, values?: Record<string, string | number>) => string
@@ -34,6 +42,14 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
   const { writeContractAsync } = useWriteContract()
   const [status, setStatus] = useState<TransactionStatus>(initialStatus)
   const [busy, setBusy] = useState(false)
+  const [history, setHistory] = useState<ActivityItem[]>([])
+
+  const recordActivity = useCallback((item: Omit<ActivityItem, 'id' | 'timestamp'>) => {
+    setHistory((current) => [
+      { ...item, id: item.hash, timestamp: Date.now() },
+      ...current,
+    ].slice(0, 12))
+  }, [])
 
   const prepare = useCallback(async () => {
     if (!address) throw new Error(t('action.connectFirst'))
@@ -78,7 +94,8 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
     })
     await waitFor(hash, t('action.minting', { symbol: token.symbol }))
     setStatus({ tone: 'success', message: t('action.claimSuccess', { symbol: token.symbol }), hash })
-  }), [prepare, run, t, waitFor, writeContractAsync])
+    recordActivity({ kind: 'claim', symbol: token.symbol, hash })
+  }), [prepare, recordActivity, run, t, waitFor, writeContractAsync])
 
   const swap = useCallback((tokenInIndex: 0 | 1, amountIn: bigint, amountOutMin: bigint) => run(async () => {
     const recipient = await prepare()
@@ -114,7 +131,8 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
     })
     await waitFor(hash, t('action.swapping'))
     setStatus({ tone: 'success', message: t('action.swapSuccess'), hash })
-  }), [pool.aEthAllowance, pool.aUsdAllowance, prepare, run, t, waitFor, writeContractAsync])
+    recordActivity({ kind: 'swap', symbol: `${tokenIn.symbol} → ${tokenOut.symbol}`, hash })
+  }), [pool.aEthAllowance, pool.aUsdAllowance, prepare, recordActivity, run, t, waitFor, writeContractAsync])
 
   const addLiquidity = useCallback((amountAEth: bigint, amountAUsd: bigint, minAEth: bigint, minAUsd: bigint) => run(async () => {
     const recipient = await prepare()
@@ -155,7 +173,8 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
     })
     await waitFor(hash, t('action.adding'))
     setStatus({ tone: 'success', message: t('action.addSuccess'), hash })
-  }), [pool.aEthAllowance, pool.aUsdAllowance, prepare, run, t, waitFor, writeContractAsync])
+    recordActivity({ kind: 'add', symbol: 'aETH + aUSD', hash })
+  }), [pool.aEthAllowance, pool.aUsdAllowance, prepare, recordActivity, run, t, waitFor, writeContractAsync])
 
   const removeLiquidity = useCallback((liquidity: bigint, minAEth: bigint, minAUsd: bigint) => run(async () => {
     const recipient = await prepare()
@@ -189,11 +208,13 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
     })
     await waitFor(hash, t('action.removing'))
     setStatus({ tone: 'success', message: t('action.removeSuccess'), hash })
-  }), [pool.lpAllowance, prepare, run, t, waitFor, writeContractAsync])
+    recordActivity({ kind: 'remove', symbol: 'aETH + aUSD', hash })
+  }), [pool.lpAllowance, prepare, recordActivity, run, t, waitFor, writeContractAsync])
 
   return {
     busy,
     status,
+    history,
     clearStatus: () => setStatus(initialStatus),
     claim,
     swap,

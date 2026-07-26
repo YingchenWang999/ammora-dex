@@ -31,7 +31,14 @@ ammora-dex/
 - Rate-limited aETH and aUSD test-token faucets
 - Unit, fuzz and invariant-oriented Foundry tests
 - Live swap, liquidity and portfolio state in the React interface
+- Professional DEX dashboard with pool metrics, searchable token picker,
+  transaction settings, route preview and session activity with BaseScan links
+- Dedicated Pools, Portfolio and Activity workspaces with responsive layouts
 - English and Simplified Chinese interface with a persistent language selector
+
+Metrics that require historical indexing (24-hour volume, fees and APR) are
+clearly marked as unavailable until an indexer is connected; the interface does
+not fabricate analytics data.
 
 The first release deliberately excludes fee-on-transfer tokens, rebasing
 tokens, flash swaps, multi-hop routing and mainnet deployment.
