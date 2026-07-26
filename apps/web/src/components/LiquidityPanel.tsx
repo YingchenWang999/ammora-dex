@@ -4,6 +4,7 @@ import { formatUnits, parseUnits } from 'viem'
 import type { AmmoraActions } from '../hooks/useAmmoraActions'
 import type { AmmoraPoolState } from '../hooks/useAmmoraPool'
 import { applySlippage, formatTokenAmount } from '../lib/amm'
+import { useI18n } from '../i18n'
 import { TransactionStatus } from './TransactionStatus'
 
 type LiquidityPanelProps = {
@@ -23,6 +24,7 @@ function parseAmount(value: string): bigint {
 }
 
 export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletReady }: LiquidityPanelProps) {
+  const { t } = useI18n()
   const [mode, setMode] = useState<'add' | 'remove'>('add')
   const [aEthAmount, setAEthAmount] = useState('1')
   const [aUsdAmount, setAUsdAmount] = useState('2580')
@@ -59,45 +61,45 @@ export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletRe
   }
 
   const actionLabel = !walletReady
-    ? 'Add Reown project ID'
+    ? t('swap.addProjectId')
     : !isConnected
-      ? 'Connect wallet'
+      ? t('swap.connectWallet')
       : !isDeploymentConfigured
-        ? 'Testnet deployment pending'
+        ? t('swap.deploymentPending')
         : actions.busy
-          ? 'Transaction in progress…'
-          : mode === 'add' ? 'Add liquidity' : 'Remove liquidity'
+          ? t('swap.transactionProgress')
+          : mode === 'add' ? t('liquidity.addAction') : t('liquidity.removeAction')
 
   return (
     <section className="swap-card liquidity-card" aria-labelledby="liquidity-title">
       <div className="swap-card__header">
         <div>
-          <span className="eyebrow">LP position</span>
-          <h1 id="liquidity-title">Fund the curve.</h1>
+          <span className="eyebrow">{t('liquidity.eyebrow')}</span>
+          <h1 id="liquidity-title">{t('liquidity.title')}</h1>
         </div>
-        <div className="mode-switch" aria-label="Liquidity operation">
-          <button type="button" className={mode === 'add' ? 'is-active' : ''} onClick={() => setMode('add')}>Add</button>
-          <button type="button" className={mode === 'remove' ? 'is-active' : ''} onClick={() => setMode('remove')}>Remove</button>
+        <div className="mode-switch" aria-label={t('liquidity.operationAria')}>
+          <button type="button" className={mode === 'add' ? 'is-active' : ''} onClick={() => setMode('add')}>{t('liquidity.add')}</button>
+          <button type="button" className={mode === 'remove' ? 'is-active' : ''} onClick={() => setMode('remove')}>{t('liquidity.remove')}</button>
         </div>
       </div>
 
       {mode === 'add' ? (
         <div className="liquidity-inputs">
           <label className="liquidity-field">
-            <span><span>aETH deposit</span><small>Balance · {formatTokenAmount(Number(formatUnits(pool.aEthBalance, 18)), 4)}</small></span>
+            <span><span>{t('liquidity.deposit', { symbol: 'aETH' })}</span><small>{t('swap.balance', { amount: formatTokenAmount(Number(formatUnits(pool.aEthBalance, 18)), 4) })}</small></span>
             <span><input value={aEthAmount} inputMode="decimal" onChange={(event) => updateAEth(event.target.value)} /><b><i style={{ background: demoTokens[0].accent }} />aETH</b></span>
           </label>
           <div className="liquidity-plus" aria-hidden="true">+</div>
           <label className="liquidity-field">
-            <span><span>aUSD deposit</span><small>Balance · {formatTokenAmount(Number(formatUnits(pool.aUsdBalance, 18)), 4)}</small></span>
+            <span><span>{t('liquidity.deposit', { symbol: 'aUSD' })}</span><small>{t('swap.balance', { amount: formatTokenAmount(Number(formatUnits(pool.aUsdBalance, 18)), 4) })}</small></span>
             <span><input value={aUsdAmount} inputMode="decimal" onChange={(event) => setAUsdAmount(event.target.value.replace(/[^0-9.]/g, ''))} /><b><i style={{ background: demoTokens[1].accent }} />aUSD</b></span>
           </label>
-          <p className="liquidity-hint">The current pool ratio is {formatTokenAmount(ratio, 4)} aUSD per aETH. Unused tokens remain in your wallet.</p>
+          <p className="liquidity-hint">{t('liquidity.ratioHint', { ratio: formatTokenAmount(ratio, 4) })}</p>
         </div>
       ) : (
         <div className="remove-position">
           <div className="position-summary">
-            <span>Your pool share</span>
+            <span>{t('liquidity.poolShare')}</span>
             <strong>{poolShare}%</strong>
             <small>{formatTokenAmount(Number(formatUnits(pool.lpBalance, 18)), 6)} AMM-LP</small>
           </div>
@@ -108,7 +110,7 @@ export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletRe
             max="100"
             value={removePercent}
             onChange={(event) => setRemovePercent(Number(event.target.value))}
-            aria-label="Percentage of liquidity to remove"
+            aria-label={t('liquidity.removePercentAria')}
           />
           <div className="percentage-row">
             {[25, 50, 75, 100].map((percent) => (
@@ -116,8 +118,8 @@ export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletRe
             ))}
           </div>
           <dl className="withdraw-preview">
-            <div><dt>Receive aETH</dt><dd>{formatTokenAmount(Number(formatUnits(estimatedAEth, 18)), 6)}</dd></div>
-            <div><dt>Receive aUSD</dt><dd>{formatTokenAmount(Number(formatUnits(estimatedAUsd, 18)), 6)}</dd></div>
+            <div><dt>{t('liquidity.receive', { symbol: 'aETH' })}</dt><dd>{formatTokenAmount(Number(formatUnits(estimatedAEth, 18)), 6)}</dd></div>
+            <div><dt>{t('liquidity.receive', { symbol: 'aUSD' })}</dt><dd>{formatTokenAmount(Number(formatUnits(estimatedAUsd, 18)), 6)}</dd></div>
           </dl>
         </div>
       )}
@@ -131,7 +133,7 @@ export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletRe
       >
         {actionLabel}<span aria-hidden="true">↗</span>
       </button>
-      <p className="wallet-caption">A 0.50% minimum-amount guard is applied to liquidity transactions.</p>
+      <p className="wallet-caption">{t('liquidity.caption')}</p>
     </section>
   )
 }

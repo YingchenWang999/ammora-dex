@@ -177,6 +177,40 @@ input:focus-visible {
   }
 }
 
+.header-actions {
+  display: flex;
+  justify-self: end;
+  align-items: center;
+  gap: 9px;
+}
+
+.language-switch {
+  display: inline-flex;
+  padding: 3px;
+  background: rgb(255 255 255 / 72%);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+
+  button {
+    position: relative;
+    min-width: 38px;
+    min-height: 34px;
+    padding: 0 9px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.63rem;
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    cursor: pointer;
+
+    &.is-active {
+      color: var(--ink);
+      background: #edf1fa;
+    }
+  }
+}
+
 .network-pulse {
   display: inline-block;
   width: 7px;
@@ -916,6 +950,10 @@ footer {
     }
   }
 
+  .header-actions {
+    grid-column: 2;
+  }
+
   .trade-layout {
     grid-template-columns: 1fr;
   }
@@ -940,6 +978,22 @@ footer {
       padding: 8px 12px;
       font-size: 0.72rem;
     }
+  }
+
+  .header-actions {
+    gap: 5px;
+  }
+
+  .language-switch {
+    button {
+      min-width: 34px;
+      padding: 0 6px;
+    }
+  }
+
+  .wallet-button {
+    min-height: 40px;
+    padding: 0 11px;
   }
 
   main {

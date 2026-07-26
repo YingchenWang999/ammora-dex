@@ -31,6 +31,7 @@ ammora-dex/
 - Rate-limited aETH and aUSD test-token faucets
 - Unit, fuzz and invariant-oriented Foundry tests
 - Live swap, liquidity and portfolio state in the React interface
+- English and Simplified Chinese interface with a persistent language selector
 
 The first release deliberately excludes fee-on-transfer tokens, rebasing
 tokens, flash swaps, multi-hop routing and mainnet deployment.

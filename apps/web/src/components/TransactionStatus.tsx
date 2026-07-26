@@ -1,10 +1,12 @@
 import type { TransactionStatus as Status } from '../hooks/useAmmoraActions'
+import { useI18n } from '../i18n'
 
 type TransactionStatusProps = {
   status: Status
 }
 
 export function TransactionStatus({ status }: TransactionStatusProps) {
+  const { t } = useI18n()
   if (status.tone === 'idle') return null
 
   return (
@@ -17,7 +19,7 @@ export function TransactionStatus({ status }: TransactionStatusProps) {
           target="_blank"
           rel="noreferrer"
         >
-          View transaction ↗
+          {t('transaction.view')}
         </a>
       )}
     </div>

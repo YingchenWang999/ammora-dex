@@ -4,6 +4,7 @@ import { baseSepolia } from '@reown/appkit/networks'
 import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi'
 import type { Address, Hash } from 'viem'
 import { ammoraPairAbi, ammoraRouterAbi, demoTokenAbi } from '../contracts/abis'
+import { useI18n, type TranslationKey } from '../i18n'
 import type { AmmoraPoolState } from './useAmmoraPool'
 
 export type TransactionStatus = {
@@ -14,16 +15,19 @@ export type TransactionStatus = {
 
 const initialStatus: TransactionStatus = { tone: 'idle', message: '' }
 
-function readableError(error: unknown): string {
-  if (!(error instanceof Error)) return 'The wallet could not complete this request.'
+type Translate = (key: TranslationKey, values?: Record<string, string | number>) => string
+
+function readableError(error: unknown, t: Translate): string {
+  if (!(error instanceof Error)) return t('action.errorGeneric')
   const match = error.message.match(/reason:\s*([^\n]+)/i)
   if (match?.[1]) return match[1].replace(/["']/g, '').trim()
-  if (/user rejected|user denied/i.test(error.message)) return 'The request was rejected in the wallet.'
-  if (/insufficient funds/i.test(error.message)) return 'Not enough Base Sepolia ETH to pay gas.'
+  if (/user rejected|user denied/i.test(error.message)) return t('action.errorRejected')
+  if (/insufficient funds/i.test(error.message)) return t('action.errorGas')
   return error.message.split('\n')[0].slice(0, 180)
 }
 
 export function useAmmoraActions(pool: AmmoraPoolState) {
+  const { t } = useI18n()
   const { address, chainId } = useAccount()
   const publicClient = usePublicClient({ chainId: baseSepolia.id })
   const { switchChainAsync } = useSwitchChain()
@@ -32,21 +36,21 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
   const [busy, setBusy] = useState(false)
 
   const prepare = useCallback(async () => {
-    if (!address) throw new Error('Connect a wallet before continuing.')
-    if (!publicClient) throw new Error('Base Sepolia RPC is not available.')
+    if (!address) throw new Error(t('action.connectFirst'))
+    if (!publicClient) throw new Error(t('action.rpcUnavailable'))
     if (chainId !== baseSepolia.id) {
-      setStatus({ tone: 'pending', message: 'Switching wallet to Base Sepolia…' })
+      setStatus({ tone: 'pending', message: t('action.switching') })
       await switchChainAsync({ chainId: baseSepolia.id })
     }
     return address
-  }, [address, chainId, publicClient, switchChainAsync])
+  }, [address, chainId, publicClient, switchChainAsync, t])
 
   const waitFor = useCallback(async (hash: Hash, message: string) => {
-    if (!publicClient) throw new Error('Base Sepolia RPC is not available.')
+    if (!publicClient) throw new Error(t('action.rpcUnavailable'))
     setStatus({ tone: 'pending', message, hash })
     const receipt = await publicClient.waitForTransactionReceipt({ hash })
-    if (receipt.status !== 'success') throw new Error('The transaction reverted on Base Sepolia.')
-  }, [publicClient])
+    if (receipt.status !== 'success') throw new Error(t('action.reverted'))
+  }, [publicClient, t])
 
   const run = useCallback(async (action: () => Promise<void>) => {
     setBusy(true)
@@ -55,16 +59,16 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
       await pool.refetch()
       setStatus((current) => ({ ...current, tone: 'success' }))
     } catch (error) {
-      setStatus({ tone: 'error', message: readableError(error) })
+      setStatus({ tone: 'error', message: readableError(error, t) })
     } finally {
       setBusy(false)
     }
-  }, [pool])
+  }, [pool, t])
 
   const claim = useCallback((tokenIndex: 0 | 1) => run(async () => {
     await prepare()
     const token = demoTokens[tokenIndex]
-    setStatus({ tone: 'pending', message: `Confirm ${token.symbol} faucet request in your wallet…` })
+    setStatus({ tone: 'pending', message: t('action.claimConfirm', { symbol: token.symbol }) })
     const hash = await writeContractAsync({
       address: token.address,
       abi: demoTokenAbi,
@@ -72,9 +76,9 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
       args: [],
       chainId: baseSepolia.id,
     })
-    await waitFor(hash, `Minting ${token.symbol} on Base Sepolia…`)
-    setStatus({ tone: 'success', message: `${token.symbol} test tokens received.`, hash })
-  }), [prepare, run, waitFor, writeContractAsync])
+    await waitFor(hash, t('action.minting', { symbol: token.symbol }))
+    setStatus({ tone: 'success', message: t('action.claimSuccess', { symbol: token.symbol }), hash })
+  }), [prepare, run, t, waitFor, writeContractAsync])
 
   const swap = useCallback((tokenInIndex: 0 | 1, amountIn: bigint, amountOutMin: bigint) => run(async () => {
     const recipient = await prepare()
@@ -83,7 +87,7 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
     const allowance = tokenInIndex === 0 ? pool.aEthAllowance : pool.aUsdAllowance
 
     if (allowance < amountIn) {
-      setStatus({ tone: 'pending', message: `Approve ${tokenIn.symbol} in your wallet…` })
+      setStatus({ tone: 'pending', message: t('action.approveToken', { symbol: tokenIn.symbol }) })
       const approvalHash = await writeContractAsync({
         address: tokenIn.address,
         abi: demoTokenAbi,
@@ -91,10 +95,10 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
         args: [baseSepoliaDeployment.router, amountIn],
         chainId: baseSepolia.id,
       })
-      await waitFor(approvalHash, `Approving ${tokenIn.symbol}…`)
+      await waitFor(approvalHash, t('action.approvingToken', { symbol: tokenIn.symbol }))
     }
 
-    setStatus({ tone: 'pending', message: 'Confirm the swap in your wallet…' })
+    setStatus({ tone: 'pending', message: t('action.swapConfirm') })
     const hash = await writeContractAsync({
       address: baseSepoliaDeployment.router,
       abi: ammoraRouterAbi,
@@ -108,9 +112,9 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
       ],
       chainId: baseSepolia.id,
     })
-    await waitFor(hash, 'Swapping on Base Sepolia…')
-    setStatus({ tone: 'success', message: 'Swap completed.', hash })
-  }), [pool.aEthAllowance, pool.aUsdAllowance, prepare, run, waitFor, writeContractAsync])
+    await waitFor(hash, t('action.swapping'))
+    setStatus({ tone: 'success', message: t('action.swapSuccess'), hash })
+  }), [pool.aEthAllowance, pool.aUsdAllowance, prepare, run, t, waitFor, writeContractAsync])
 
   const addLiquidity = useCallback((amountAEth: bigint, amountAUsd: bigint, minAEth: bigint, minAUsd: bigint) => run(async () => {
     const recipient = await prepare()
@@ -120,7 +124,7 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
     for (const index of [0, 1] as const) {
       if (allowances[index] < amounts[index]) {
         const token = demoTokens[index]
-        setStatus({ tone: 'pending', message: `Approve ${token.symbol} in your wallet…` })
+        setStatus({ tone: 'pending', message: t('action.approveToken', { symbol: token.symbol }) })
         const approvalHash = await writeContractAsync({
           address: token.address,
           abi: demoTokenAbi,
@@ -128,11 +132,11 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
           args: [baseSepoliaDeployment.router, amounts[index]],
           chainId: baseSepolia.id,
         })
-        await waitFor(approvalHash, `Approving ${token.symbol}…`)
+        await waitFor(approvalHash, t('action.approvingToken', { symbol: token.symbol }))
       }
     }
 
-    setStatus({ tone: 'pending', message: 'Confirm liquidity deposit in your wallet…' })
+    setStatus({ tone: 'pending', message: t('action.addConfirm') })
     const hash = await writeContractAsync({
       address: baseSepoliaDeployment.router,
       abi: ammoraRouterAbi,
@@ -149,14 +153,14 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
       ],
       chainId: baseSepolia.id,
     })
-    await waitFor(hash, 'Adding liquidity to Ammora…')
-    setStatus({ tone: 'success', message: 'Liquidity added and LP tokens received.', hash })
-  }), [pool.aEthAllowance, pool.aUsdAllowance, prepare, run, waitFor, writeContractAsync])
+    await waitFor(hash, t('action.adding'))
+    setStatus({ tone: 'success', message: t('action.addSuccess'), hash })
+  }), [pool.aEthAllowance, pool.aUsdAllowance, prepare, run, t, waitFor, writeContractAsync])
 
   const removeLiquidity = useCallback((liquidity: bigint, minAEth: bigint, minAUsd: bigint) => run(async () => {
     const recipient = await prepare()
     if (pool.lpAllowance < liquidity) {
-      setStatus({ tone: 'pending', message: 'Approve AMM-LP tokens in your wallet…' })
+      setStatus({ tone: 'pending', message: t('action.approveLp') })
       const approvalHash = await writeContractAsync({
         address: baseSepoliaDeployment.pair,
         abi: ammoraPairAbi,
@@ -164,10 +168,10 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
         args: [baseSepoliaDeployment.router, liquidity],
         chainId: baseSepolia.id,
       })
-      await waitFor(approvalHash, 'Approving AMM-LP tokens…')
+      await waitFor(approvalHash, t('action.approvingLp'))
     }
 
-    setStatus({ tone: 'pending', message: 'Confirm liquidity withdrawal in your wallet…' })
+    setStatus({ tone: 'pending', message: t('action.removeConfirm') })
     const hash = await writeContractAsync({
       address: baseSepoliaDeployment.router,
       abi: ammoraRouterAbi,
@@ -183,9 +187,9 @@ export function useAmmoraActions(pool: AmmoraPoolState) {
       ],
       chainId: baseSepolia.id,
     })
-    await waitFor(hash, 'Removing liquidity from Ammora…')
-    setStatus({ tone: 'success', message: 'Liquidity removed.', hash })
-  }), [pool.lpAllowance, prepare, run, waitFor, writeContractAsync])
+    await waitFor(hash, t('action.removing'))
+    setStatus({ tone: 'success', message: t('action.removeSuccess'), hash })
+  }), [pool.lpAllowance, prepare, run, t, waitFor, writeContractAsync])
 
   return {
     busy,

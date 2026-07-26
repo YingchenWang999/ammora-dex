@@ -4,6 +4,7 @@ import { formatUnits, parseUnits } from 'viem'
 import type { AmmoraActions } from '../hooks/useAmmoraActions'
 import type { AmmoraPoolState } from '../hooks/useAmmoraPool'
 import { applySlippage, formatTokenAmount, getAmountOut, getPriceImpact } from '../lib/amm'
+import { useI18n } from '../i18n'
 import { TransactionStatus } from './TransactionStatus'
 
 type SwapPanelProps = {
@@ -31,6 +32,7 @@ export function SwapPanel({
   isConnected,
   walletReady,
 }: SwapPanelProps) {
+  const { t } = useI18n()
   const [amount, setAmount] = useState('1')
   const [inputIndex, setInputIndex] = useState<0 | 1>(0)
   const [slippage, setSlippage] = useState('0.50')
@@ -63,16 +65,16 @@ export function SwapPanel({
   }
 
   const actionLabel = !walletReady
-    ? 'Add Reown project ID'
+    ? t('swap.addProjectId')
     : !isConnected
-      ? 'Connect wallet'
+      ? t('swap.connectWallet')
       : !isDeploymentConfigured
-        ? 'Testnet deployment pending'
+        ? t('swap.deploymentPending')
         : insufficientBalance
-          ? `Insufficient ${inputToken.symbol}`
+          ? t('swap.insufficient', { symbol: inputToken.symbol })
           : actions.busy
-            ? 'Transaction in progress…'
-            : `Swap ${inputToken.symbol}`
+            ? t('swap.transactionProgress')
+            : t('swap.action', { symbol: inputToken.symbol })
 
   const submit = () => {
     if (!isConnected) return onConnect()
@@ -83,14 +85,14 @@ export function SwapPanel({
     <section className="swap-card" aria-labelledby="swap-title">
       <div className="swap-card__header">
         <div>
-          <span className="eyebrow">Live trade</span>
-          <h1 id="swap-title">Move value, not trust.</h1>
+          <span className="eyebrow">{t('swap.eyebrow')}</span>
+          <h1 id="swap-title">{t('swap.title')}</h1>
         </div>
         <label className="slippage-control">
-          <span>Slippage</span>
+          <span>{t('swap.slippage')}</span>
           <span className="slippage-control__input">
             <input
-              aria-label="Slippage tolerance"
+              aria-label={t('swap.slippageAria')}
               inputMode="decimal"
               value={slippage}
               onChange={(event) => setSlippage(event.target.value.replace(/[^0-9.]/g, ''))}
@@ -102,12 +104,12 @@ export function SwapPanel({
 
       <div className="token-field token-field--input">
         <div className="token-field__label">
-          <span>You pay</span>
-          <span>Balance · {formatTokenAmount(Number(formatUnits(balanceIn, 18)), 4)}</span>
+          <span>{t('swap.youPay')}</span>
+          <span>{t('swap.balance', { amount: formatTokenAmount(Number(formatUnits(balanceIn, 18)), 4) })}</span>
         </div>
         <div className="token-field__control">
           <input
-            aria-label={`Amount of ${inputToken.symbol} to pay`}
+            aria-label={t('swap.amountPayAria', { symbol: inputToken.symbol })}
             inputMode="decimal"
             placeholder="0"
             value={amount}
@@ -125,21 +127,21 @@ export function SwapPanel({
           onClick={() => setAmount(formatUnits(balanceIn, 18))}
           disabled={!isConnected || balanceIn === 0n}
         >
-          Use max
+          {t('swap.useMax')}
         </button>
       </div>
 
-      <button className="direction-button" type="button" onClick={reverseDirection} aria-label="Reverse swap direction">
+      <button className="direction-button" type="button" onClick={reverseDirection} aria-label={t('swap.reverseAria')}>
         <span aria-hidden="true">↓</span>
       </button>
 
       <div className="token-field token-field--output">
         <div className="token-field__label">
-          <span>You receive</span>
-          <span>Live pool quote</span>
+          <span>{t('swap.youReceive')}</span>
+          <span>{t('swap.liveQuote')}</span>
         </div>
         <div className="token-field__control">
-          <output aria-label={`Estimated ${outputToken.symbol} received`}>
+          <output aria-label={t('swap.estimatedAria', { symbol: outputToken.symbol })}>
             {formatTokenAmount(Number(formatUnits(amountOut, 18)), 6)}
           </output>
           <button className="token-select" type="button" onClick={reverseDirection}>
@@ -148,13 +150,13 @@ export function SwapPanel({
             <span aria-hidden="true">⌄</span>
           </button>
         </div>
-        <span className="token-field__fiat">Minimum received · {formatTokenAmount(Number(formatUnits(amountOutMin, 18)), 6)}</span>
+        <span className="token-field__fiat">{t('swap.minimumReceived', { amount: formatTokenAmount(Number(formatUnits(amountOutMin, 18)), 6) })}</span>
       </div>
 
       <dl className="trade-details">
-        <div><dt>Rate</dt><dd>1 {inputToken.symbol} = {rate} {outputToken.symbol}</dd></div>
-        <div><dt>Price impact</dt><dd className={priceImpact > 2 ? 'is-warning' : ''}>{formatTokenAmount(priceImpact, 2)}%</dd></div>
-        <div><dt>LP fee</dt><dd>0.30%</dd></div>
+        <div><dt>{t('swap.rate')}</dt><dd>1 {inputToken.symbol} = {rate} {outputToken.symbol}</dd></div>
+        <div><dt>{t('swap.priceImpact')}</dt><dd className={priceImpact > 2 ? 'is-warning' : ''}>{formatTokenAmount(priceImpact, 2)}%</dd></div>
+        <div><dt>{t('swap.lpFee')}</dt><dd>0.30%</dd></div>
       </dl>
 
       <TransactionStatus status={actions.status} />
@@ -171,7 +173,7 @@ export function SwapPanel({
       >
         {actionLabel}<span aria-hidden="true">↗</span>
       </button>
-      <p className="wallet-caption">Approvals and swaps are confirmed separately in your wallet.</p>
+      <p className="wallet-caption">{t('swap.caption')}</p>
     </section>
   )
 }
