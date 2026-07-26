@@ -11,6 +11,35 @@ export function applySlippage(amount: bigint, slippageBps: number): bigint {
   return (amount * BigInt(10_000 - safeBps)) / 10_000n
 }
 
+export function getOptimalLiquidityAmounts(
+  amountADesired: bigint,
+  amountBDesired: bigint,
+  reserveA: bigint,
+  reserveB: bigint,
+): readonly [bigint, bigint] {
+  if (amountADesired <= 0n || amountBDesired <= 0n) return [0n, 0n]
+  if (reserveA === 0n && reserveB === 0n) return [amountADesired, amountBDesired]
+  if (reserveA <= 0n || reserveB <= 0n) return [0n, 0n]
+
+  const amountBOptimal = (amountADesired * reserveB) / reserveA
+  if (amountBOptimal <= amountBDesired) return [amountADesired, amountBOptimal]
+
+  return [(amountBDesired * reserveA) / reserveB, amountBDesired]
+}
+
+export function sanitizeDecimalInput(value: string, maximumFractionDigits = 18): string {
+  const digitsAndDots = value.replace(/[^0-9.]/g, '')
+  const dotIndex = digitsAndDots.indexOf('.')
+  if (dotIndex === -1) return digitsAndDots
+
+  const whole = digitsAndDots.slice(0, dotIndex)
+  const fraction = digitsAndDots
+    .slice(dotIndex + 1)
+    .replaceAll('.', '')
+    .slice(0, maximumFractionDigits)
+  return `${whole}.${fraction}`
+}
+
 export function getPreviewAmountOut(
   amountIn: number,
   reserveIn: number,

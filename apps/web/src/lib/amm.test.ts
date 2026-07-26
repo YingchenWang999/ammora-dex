@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { applySlippage, formatTokenAmount, getAmountOut, getPreviewAmountOut, getPriceImpact } from './amm'
+import { isAmmoraDeploymentConfigured } from '@ammora/contract-config'
+import {
+  applySlippage,
+  formatTokenAmount,
+  getAmountOut,
+  getOptimalLiquidityAmounts,
+  getPreviewAmountOut,
+  getPriceImpact,
+  sanitizeDecimalInput,
+} from './amm'
 
 describe('AMM preview math', () => {
   it('applies the 0.30% fee to the constant-product quote', () => {
@@ -27,5 +36,30 @@ describe('AMM preview math', () => {
   it('applies basis-point slippage safely', () => {
     expect(applySlippage(10_000n, 50)).toBe(9_950n)
     expect(applySlippage(10_000n, -10)).toBe(10_000n)
+  })
+
+  it('selects amounts at the existing pool ratio', () => {
+    expect(getOptimalLiquidityAmounts(10n, 100n, 10n, 20n)).toEqual([10n, 20n])
+    expect(getOptimalLiquidityAmounts(100n, 10n, 20n, 10n)).toEqual([20n, 10n])
+    expect(getOptimalLiquidityAmounts(10n, 20n, 0n, 0n)).toEqual([10n, 20n])
+  })
+
+  it('normalizes decimal input without creating invalid multiple-dot values', () => {
+    expect(sanitizeDecimalInput('1..23abc')).toBe('1.23')
+    expect(sanitizeDecimalInput('.123456', 4)).toBe('.1234')
+  })
+
+  it('rejects incomplete, malformed, and duplicate deployment addresses', () => {
+    const valid = {
+      chainId: 84532 as const,
+      factory: '0x0000000000000000000000000000000000000001',
+      router: '0x0000000000000000000000000000000000000002',
+      pair: '0x0000000000000000000000000000000000000003',
+      aEth: '0x0000000000000000000000000000000000000004',
+      aUsd: '0x0000000000000000000000000000000000000005',
+    }
+    expect(isAmmoraDeploymentConfigured(valid)).toBe(true)
+    expect(isAmmoraDeploymentConfigured({ ...valid, router: valid.factory })).toBe(false)
+    expect(isAmmoraDeploymentConfigured({ ...valid, pair: 'not-an-address' })).toBe(false)
   })
 })

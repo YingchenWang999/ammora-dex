@@ -68,10 +68,12 @@ pnpm contract:test
 ```bash
 cast wallet import ammora-deployer
 export DEPLOYER_ADDRESS=$(cast wallet address --account ammora-deployer)
-export BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-export BASESCAN_API_KEY=your_basescan_key
 pnpm contract:deploy:base-sepolia -- --account ammora-deployer --sender "$DEPLOYER_ADDRESS"
 ```
+
+部署命令会从已被 Git 忽略的根目录 `.env.local` 读取
+`BASE_SEPOLIA_RPC_URL` 和 `BASESCAN_API_KEY`，检查必需配置，并将 BaseScan Key
+明确传给 Foundry 的 Etherscan 验证器；如果 Shell 中已设置同名变量，则优先使用 Shell 值。
 
 `PRIVATE_KEY` 仍可作为自动化测试网部署时的本地备用方案。不要把私钥粘贴到聊天中、提交到 Git，或写入任何以 `VITE_` 开头的变量。
 

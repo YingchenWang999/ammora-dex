@@ -1,4 +1,3 @@
-import { createAppKit } from '@reown/appkit/react'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { baseSepolia } from '@reown/appkit/networks'
 import { createPublicClient, http } from 'viem'
@@ -29,8 +28,11 @@ export const wagmiAdapter = new WagmiAdapter({
   },
 })
 
-if (walletKitConfigured) {
-  createAppKit({
+let appKitPromise: ReturnType<typeof initializeAppKit> | undefined
+
+async function initializeAppKit() {
+  const { createAppKit } = await import('@reown/appkit/react')
+  return createAppKit({
     adapters: [wagmiAdapter],
     networks: [baseSepolia],
     projectId,
@@ -46,6 +48,13 @@ if (walletKitConfigured) {
       '--w3m-border-radius-master': '2px',
     },
   })
+}
+
+export async function openWalletKit(): Promise<void> {
+  if (!walletKitConfigured) return
+  appKitPromise ??= initializeAppKit()
+  const appKit = await appKitPromise
+  await appKit.open()
 }
 
 export const wagmiConfig = wagmiAdapter.wagmiConfig

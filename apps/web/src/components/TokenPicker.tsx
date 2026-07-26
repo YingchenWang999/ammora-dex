@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { demoTokens } from '@ammora/contract-config'
 import { formatUnits } from 'viem'
 import { useI18n } from '../i18n'
@@ -9,12 +9,14 @@ type TokenPickerProps = {
   onClose: () => void
   onSelect: (index: 0 | 1) => void
   open: boolean
+  returnFocusTo: RefObject<HTMLButtonElement | null>
   selectedIndex: 0 | 1
 }
 
-export function TokenPicker({ balances, onClose, onSelect, open, selectedIndex }: TokenPickerProps) {
+export function TokenPicker({ balances, onClose, onSelect, open, returnFocusTo, selectedIndex }: TokenPickerProps) {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
+  const dialogRef = useRef<HTMLElement>(null)
   const closePicker = useCallback(() => {
     setQuery('')
     onClose()
@@ -24,12 +26,37 @@ export function TokenPicker({ balances, onClose, onSelect, open, selectedIndex }
     .filter(({ token }) => `${token.symbol} ${token.name}`.toLowerCase().includes(query.toLowerCase())), [query])
 
   useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closePicker()
+    if (!open) return
+    const focusTarget = returnFocusTo.current
+
+    const handleDialogKeys = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closePicker()
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+      )
+      if (!focusable?.length) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
-    if (open) window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [closePicker, open])
+
+    window.addEventListener('keydown', handleDialogKeys)
+    return () => {
+      window.removeEventListener('keydown', handleDialogKeys)
+      focusTarget?.focus()
+    }
+  }, [closePicker, open, returnFocusTo])
 
   if (!open) return null
 
@@ -37,7 +64,7 @@ export function TokenPicker({ balances, onClose, onSelect, open, selectedIndex }
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) closePicker()
     }}>
-      <section className="token-picker" role="dialog" aria-modal="true" aria-labelledby="token-picker-title">
+      <section ref={dialogRef} className="token-picker" role="dialog" aria-modal="true" aria-labelledby="token-picker-title">
         <header>
           <div>
             <span className="eyebrow">{t('tokenPicker.eyebrow')}</span>

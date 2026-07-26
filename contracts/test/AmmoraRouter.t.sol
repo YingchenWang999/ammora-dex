@@ -55,6 +55,16 @@ contract AmmoraRouterTest is Test {
         assertEq(factory.allPairsLength(), 1);
     }
 
+    function test_RevertWhenPairAlreadyExists() external {
+        vm.expectRevert(AmmoraFactory.PairExists.selector);
+        factory.createPair(address(tokenA), address(tokenB));
+    }
+
+    function test_RevertWhenPairTokensAreIdentical() external {
+        vm.expectRevert(AmmoraFactory.IdenticalTokens.selector);
+        factory.createPair(address(tokenA), address(tokenA));
+    }
+
     function test_InitialLiquidityLocksMinimumShares() external view {
         assertEq(pair.balanceOf(address(1)), pair.MINIMUM_LIQUIDITY());
         assertGt(pair.balanceOf(liquidityProvider), 0);
@@ -95,11 +105,51 @@ contract AmmoraRouterTest is Test {
         assertGt(amountB, 0);
     }
 
+    function test_AddLiquidityUsesOptimalPoolRatio() external {
+        (uint112 reserve0Before, uint112 reserve1Before) = pair.getReserves();
+
+        vm.startPrank(liquidityProvider);
+        router.addLiquidity(
+            address(tokenA),
+            address(tokenB),
+            100 ether,
+            50 ether,
+            50 ether,
+            50 ether,
+            liquidityProvider,
+            block.timestamp
+        );
+        vm.stopPrank();
+
+        (uint112 reserve0After, uint112 reserve1After) = pair.getReserves();
+        assertEq(uint256(reserve0After) - reserve0Before, 50 ether);
+        assertEq(uint256(reserve1After) - reserve1Before, 50 ether);
+    }
+
     function test_RevertWhenDeadlineExpired() external {
         address[] memory path = _path(address(tokenA), address(tokenB));
         vm.expectRevert(AmmoraRouter.Expired.selector);
         vm.prank(trader);
         router.swapExactTokensForTokens(1 ether, 0, path, trader, block.timestamp - 1);
+    }
+
+    function test_RevertWhenSwapMinimumCannotBeMet() external {
+        uint256 amountIn = 1 ether;
+        uint256 quoted = router.getAmountOut(amountIn, address(tokenA), address(tokenB));
+        address[] memory path = _path(address(tokenA), address(tokenB));
+
+        vm.startPrank(trader);
+        tokenA.approve(address(router), amountIn);
+        vm.expectRevert(AmmoraRouter.InsufficientOutputAmount.selector);
+        router.swapExactTokensForTokens(amountIn, quoted + 1, path, trader, block.timestamp);
+        vm.stopPrank();
+    }
+
+    function test_RevertWhenSwapPathIsInvalid() external {
+        address[] memory path = _path(address(tokenA), address(tokenA));
+        vm.expectRevert(AmmoraRouter.InvalidPath.selector);
+        vm.prank(trader);
+        router.swapExactTokensForTokens(1 ether, 0, path, trader, block.timestamp);
     }
 
     function test_RevertWhenLiquidityMinimumCannotBeMet() external {

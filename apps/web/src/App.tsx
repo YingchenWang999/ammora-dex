@@ -1,12 +1,11 @@
 import { useCallback, useState } from 'react'
-import { useAppKit } from '@reown/appkit/react'
 import { isDeploymentConfigured } from '@ammora/contract-config'
 import { useAccount } from 'wagmi'
 import { FaucetPanel } from './components/FaucetPanel'
 import { LiquidityPanel } from './components/LiquidityPanel'
 import { ActivityPanel, MarketWorkspace, PoolsDirectory, PortfolioPanel } from './components/DashboardPanels'
 import { SwapPanel } from './components/SwapPanel'
-import { walletKitConfigured } from './config/wagmi'
+import { openWalletKit, walletKitConfigured } from './config/wagmi'
 import { useAmmoraActions } from './hooks/useAmmoraActions'
 import { useAmmoraPool } from './hooks/useAmmoraPool'
 import { useI18n, type Locale } from './i18n'
@@ -97,8 +96,7 @@ function AmmoraExperience({ onConnect, walletReady }: AmmoraExperienceProps) {
 }
 
 function WalletEnabledApp() {
-  const { open } = useAppKit()
-  return <AmmoraExperience onConnect={() => void open()} walletReady />
+  return <AmmoraExperience onConnect={() => void openWalletKit()} walletReady />
 }
 
 export default function App() {

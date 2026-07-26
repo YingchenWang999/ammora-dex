@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { demoTokens, isDeploymentConfigured } from '@ammora/contract-config'
 import { formatUnits, parseUnits } from 'viem'
 import type { AmmoraActions } from '../hooks/useAmmoraActions'
 import type { AmmoraPoolState } from '../hooks/useAmmoraPool'
-import { applySlippage, formatTokenAmount, getAmountOut, getPriceImpact } from '../lib/amm'
+import {
+  applySlippage,
+  formatTokenAmount,
+  getAmountOut,
+  getPriceImpact,
+  sanitizeDecimalInput,
+} from '../lib/amm'
 import { useI18n } from '../i18n'
 import { TransactionStatus } from './TransactionStatus'
 import { TokenPicker } from './TokenPicker'
@@ -39,6 +45,7 @@ export function SwapPanel({
   const [slippage, setSlippage] = useState('0.50')
   const [pickerTarget, setPickerTarget] = useState<'input' | 'output' | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const pickerTriggerRef = useRef<HTMLButtonElement | null>(null)
   const inputToken = demoTokens[inputIndex]
   const outputToken = demoTokens[inputIndex === 0 ? 1 : 0]
   const amountIn = parseAmount(amount)
@@ -53,6 +60,7 @@ export function SwapPanel({
   const priceImpact = getPriceImpact(numericAmount, numericReserve)
   const curveProgress = Math.min(Math.max(numericAmount / Math.max(numericReserve * 0.12, 1), 0), 1)
   const insufficientBalance = amountIn > balanceIn
+  const closeTokenPicker = useCallback(() => setPickerTarget(null), [])
 
   useEffect(() => onProgressChange(curveProgress), [curveProgress, onProgressChange])
 
@@ -104,7 +112,7 @@ export function SwapPanel({
             <span>{t('swap.slippage')}</span>
             <div className="slippage-presets">
               {['0.10', '0.50', '1.00'].map((value) => <button key={value} className={slippage === value ? 'is-active' : ''} type="button" onClick={() => setSlippage(value)}>{value}%</button>)}
-              <label><input aria-label={t('swap.slippageAria')} inputMode="decimal" value={slippage} onChange={(event) => setSlippage(event.target.value.replace(/[^0-9.]/g, ''))} />%</label>
+              <label><input aria-label={t('swap.slippageAria')} inputMode="decimal" value={slippage} onChange={(event) => setSlippage(sanitizeDecimalInput(event.target.value, 2))} />%</label>
             </div>
             <div className="deadline-row"><span>{t('swap.deadline')}</span><strong>20 {t('swap.minutes')}</strong></div>
           </section>}
@@ -122,9 +130,12 @@ export function SwapPanel({
             inputMode="decimal"
             placeholder="0"
             value={amount}
-            onChange={(event) => setAmount(event.target.value.replace(/[^0-9.]/g, ''))}
+            onChange={(event) => setAmount(sanitizeDecimalInput(event.target.value))}
           />
-          <button className="token-select" type="button" onClick={() => setPickerTarget('input')}>
+          <button className="token-select" type="button" onClick={(event) => {
+            pickerTriggerRef.current = event.currentTarget
+            setPickerTarget('input')
+          }}>
             <span className="token-dot" style={{ backgroundColor: inputToken.accent }} />
             {inputToken.symbol}
             <span aria-hidden="true">⌄</span>
@@ -153,7 +164,10 @@ export function SwapPanel({
           <output aria-label={t('swap.estimatedAria', { symbol: outputToken.symbol })}>
             {formatTokenAmount(Number(formatUnits(amountOut, 18)), 6)}
           </output>
-          <button className="token-select" type="button" onClick={() => setPickerTarget('output')}>
+          <button className="token-select" type="button" onClick={(event) => {
+            pickerTriggerRef.current = event.currentTarget
+            setPickerTarget('output')
+          }}>
             <span className="token-dot" style={{ backgroundColor: outputToken.accent }} />
             {outputToken.symbol}
             <span aria-hidden="true">⌄</span>
@@ -192,8 +206,9 @@ export function SwapPanel({
         balances={[pool.aEthBalance, pool.aUsdBalance]}
         open={pickerTarget !== null}
         selectedIndex={pickerTarget === 'output' ? (inputIndex === 0 ? 1 : 0) : inputIndex}
-        onClose={() => setPickerTarget(null)}
+        onClose={closeTokenPicker}
         onSelect={selectToken}
+        returnFocusTo={pickerTriggerRef}
       />
     </section>
   )

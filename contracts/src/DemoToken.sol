@@ -30,10 +30,12 @@ contract DemoToken is ERC20, Ownable {
     function claim() external {
         uint256 lastClaim = lastClaimAt[msg.sender];
         // A small timestamp drift cannot bypass a day-long, testnet-only faucet cooldown.
-        // slither-disable-next-line timestamp
+        // slither-disable-start timestamp
+        // forge-lint: disable-next-line(block-timestamp)
         if (lastClaim != 0 && block.timestamp < lastClaim + FAUCET_COOLDOWN) {
             revert FaucetCooldownActive(lastClaim + FAUCET_COOLDOWN);
         }
+        // slither-disable-end timestamp
 
         lastClaimAt[msg.sender] = block.timestamp;
         _mint(msg.sender, faucetAmount);

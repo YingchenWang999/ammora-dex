@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import { isAddress, type Address } from 'viem'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const
 
@@ -20,10 +20,22 @@ export const baseSepoliaDeployment: AmmoraDeployment = {
   aUsd: (import.meta.env?.VITE_AMMORA_AUSD_ADDRESS ?? ZERO_ADDRESS) as Address,
 }
 
-export const isDeploymentConfigured =
-  Object.values(baseSepoliaDeployment).every((value) =>
-    typeof value === 'number' || value !== ZERO_ADDRESS,
-  )
+export function isAmmoraDeploymentConfigured(
+  deployment: Record<'factory' | 'router' | 'pair' | 'aEth' | 'aUsd', string>,
+): boolean {
+  const addresses = [
+    deployment.factory,
+    deployment.router,
+    deployment.pair,
+    deployment.aEth,
+    deployment.aUsd,
+  ]
+
+  return addresses.every((address) => isAddress(address) && address !== ZERO_ADDRESS)
+    && new Set(addresses.map((address) => address.toLowerCase())).size === addresses.length
+}
+
+export const isDeploymentConfigured = isAmmoraDeploymentConfigured(baseSepoliaDeployment)
 
 export const demoTokens = [
   {

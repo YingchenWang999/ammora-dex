@@ -3,7 +3,12 @@ import { demoTokens, isDeploymentConfigured } from '@ammora/contract-config'
 import { formatUnits, parseUnits } from 'viem'
 import type { AmmoraActions } from '../hooks/useAmmoraActions'
 import type { AmmoraPoolState } from '../hooks/useAmmoraPool'
-import { applySlippage, formatTokenAmount } from '../lib/amm'
+import {
+  applySlippage,
+  formatTokenAmount,
+  getOptimalLiquidityAmounts,
+  sanitizeDecimalInput,
+} from '../lib/amm'
 import { useI18n } from '../i18n'
 import { TransactionStatus } from './TransactionStatus'
 
@@ -31,13 +36,22 @@ export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletRe
   const [removePercent, setRemovePercent] = useState(50)
   const aEth = parseAmount(aEthAmount)
   const aUsd = parseAmount(aUsdAmount)
+  const [aEthUsed, aUsdUsed] = getOptimalLiquidityAmounts(
+    aEth,
+    aUsd,
+    pool.aEthReserve,
+    pool.aUsdReserve,
+  )
   const liquidity = (pool.lpBalance * BigInt(removePercent)) / 100n
   const estimatedAEth = pool.totalSupply > 0n ? (liquidity * pool.aEthReserve) / pool.totalSupply : 0n
   const estimatedAUsd = pool.totalSupply > 0n ? (liquidity * pool.aUsdReserve) / pool.totalSupply : 0n
   const poolShare = pool.totalSupply > 0n
     ? (Number(pool.lpBalance * 1_000_000n / pool.totalSupply) / 10_000).toFixed(4)
     : '0.0000'
-  const canAdd = aEth > 0n && aUsd > 0n && aEth <= pool.aEthBalance && aUsd <= pool.aUsdBalance
+  const canAdd = aEthUsed > 0n
+    && aUsdUsed > 0n
+    && aEthUsed <= pool.aEthBalance
+    && aUsdUsed <= pool.aUsdBalance
   const canRemove = liquidity > 0n
 
   const ratio = (() => {
@@ -46,15 +60,26 @@ export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletRe
   })()
 
   const updateAEth = (value: string) => {
-    const clean = value.replace(/[^0-9.]/g, '')
+    const clean = sanitizeDecimalInput(value)
     setAEthAmount(clean)
     if (ratio > 0 && clean) setAUsdAmount(formatTokenAmount(Number(clean) * ratio, 6))
+  }
+
+  const updateAUsd = (value: string) => {
+    const clean = sanitizeDecimalInput(value)
+    setAUsdAmount(clean)
+    if (ratio > 0 && clean) setAEthAmount(formatTokenAmount(Number(clean) / ratio, 8))
   }
 
   const submit = () => {
     if (!isConnected) return onConnect()
     if (mode === 'add' && canAdd) {
-      actions.addLiquidity(aEth, aUsd, applySlippage(aEth, 50), applySlippage(aUsd, 50))
+      actions.addLiquidity(
+        aEth,
+        aUsd,
+        applySlippage(aEthUsed, 50),
+        applySlippage(aUsdUsed, 50),
+      )
     } else if (mode === 'remove' && canRemove) {
       actions.removeLiquidity(liquidity, applySlippage(estimatedAEth, 50), applySlippage(estimatedAUsd, 50))
     }
@@ -93,7 +118,7 @@ export function LiquidityPanel({ actions, isConnected, onConnect, pool, walletRe
           <div className="liquidity-plus" aria-hidden="true">+</div>
           <label className="liquidity-field">
             <span><span>{t('liquidity.deposit', { symbol: 'aUSD' })}</span><small>{t('swap.balance', { amount: formatTokenAmount(Number(formatUnits(pool.aUsdBalance, 18)), 4) })}</small></span>
-            <span><input value={aUsdAmount} inputMode="decimal" onChange={(event) => setAUsdAmount(event.target.value.replace(/[^0-9.]/g, ''))} /><b><i style={{ background: demoTokens[1].accent }} />aUSD</b></span>
+            <span><input value={aUsdAmount} inputMode="decimal" onChange={(event) => updateAUsd(event.target.value)} /><b><i style={{ background: demoTokens[1].accent }} />aUSD</b></span>
           </label>
           <p className="liquidity-hint">{t('liquidity.ratioHint', { ratio: formatTokenAmount(ratio, 4) })}</p>
         </div>

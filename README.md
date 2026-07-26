@@ -80,10 +80,13 @@ or shell history.
 ```bash
 cast wallet import ammora-deployer
 export DEPLOYER_ADDRESS=$(cast wallet address --account ammora-deployer)
-export BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-export BASESCAN_API_KEY=your_basescan_key
 pnpm contract:deploy:base-sepolia -- --account ammora-deployer --sender "$DEPLOYER_ADDRESS"
 ```
+
+The deployment command loads `BASE_SEPOLIA_RPC_URL` and `BASESCAN_API_KEY` from
+the ignored root `.env.local` file, validates the required values, and passes the
+BaseScan key explicitly to Foundry's Etherscan verifier. Shell environment values
+take precedence when supplied.
 
 `PRIVATE_KEY` remains an optional local-only fallback for automated testnet
 deployments. Never paste it into chat, commit it, or prefix it with `VITE_`.

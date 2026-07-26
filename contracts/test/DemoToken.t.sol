@@ -33,6 +33,18 @@ contract DemoTokenTest is Test {
         token.claim();
     }
 
+    function test_ClaimSucceedsAtExactCooldownBoundary() external {
+        vm.warp(10);
+        vm.prank(user);
+        token.claim();
+
+        vm.warp(10 + 1 days);
+        vm.prank(user);
+        token.claim();
+
+        assertEq(token.balanceOf(user), 20 ether);
+    }
+
     function test_OwnerCanSeedLiquiditySupply() external {
         vm.prank(owner);
         token.mint(owner, 100 ether);
