@@ -26,14 +26,16 @@ export BASE_SEPOLIA_RPC_URL="${BASE_SEPOLIA_RPC_URL:-https://sepolia.base.org}"
 : "${BASESCAN_API_KEY:?Add BASESCAN_API_KEY to .env.local or the shell environment}"
 : "${DEPLOYER_ADDRESS:?Set DEPLOYER_ADDRESS to the encrypted keystore address}"
 
-forge script \
-  --root "$contracts_dir" \
-  "$contracts_dir/script/Deploy.s.sol:Deploy" \
-  --rpc-url base_sepolia \
-  --broadcast \
-  --slow \
-  --verify \
-  --verifier etherscan \
-  --etherscan-api-key "$BASESCAN_API_KEY" \
-  -vvvv \
-  "$@"
+(
+  cd "$contracts_dir"
+  forge script \
+    "script/Deploy.s.sol:Deploy" \
+    --rpc-url base_sepolia \
+    --broadcast \
+    --slow \
+    --verify \
+    --verifier etherscan \
+    --etherscan-api-key "$BASESCAN_API_KEY" \
+    -vvvv \
+    "$@"
+)

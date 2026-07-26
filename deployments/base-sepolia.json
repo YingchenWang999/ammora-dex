@@ -1,0 +1,14 @@
+{
+  "chainId": 84532,
+  "network": "base-sepolia",
+  "deployer": "0x762db4118a8f21918ed47a5f86b595d0c8c5fd22",
+  "factory": "0xF152af7227C16C3D0C06a52d0DAD088B743Fc52c",
+  "router": "0xE3a139469EBCE01E733718Be6faEA5b050CfdE3E",
+  "pair": "0x22a9b9bEa81Ff0D23a2844A82AFEd5732c18Ed44",
+  "aEth": "0xc14423d1075815938d088738E824C9FcdC98AD33",
+  "aUsd": "0x32029b9294D0ce36Ef1c3398dED7Bb28F04C0FD3",
+  "initialLiquidity": {
+    "aEth": "100000000000000000000",
+    "aUsd": "258000000000000000000000"
+  }
+}

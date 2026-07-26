@@ -68,7 +68,7 @@ pnpm contract:test
 ```bash
 cast wallet import ammora-deployer
 export DEPLOYER_ADDRESS=$(cast wallet address --account ammora-deployer)
-pnpm contract:deploy:base-sepolia -- --account ammora-deployer --sender "$DEPLOYER_ADDRESS"
+pnpm contract:deploy:base-sepolia --account ammora-deployer --sender "$DEPLOYER_ADDRESS"
 ```
 
 部署命令会从已被 Git 忽略的根目录 `.env.local` 读取
@@ -85,4 +85,11 @@ pnpm contract:deploy:base-sepolia -- --account ammora-deployer --sender "$DEPLOY
 
 ## 当前状态
 
-作品集测试网范围内的功能实现已经完成。本地端到端验证覆盖合约部署、测试币领取、兑换、添加流动性和移除流动性。Base Sepolia 公共地址和 Vercel 链接会在部署凭据与外部项目配置完成后补充。
+作品集测试网范围内的功能实现已经完成。本地端到端验证覆盖合约部署、测试币领取、兑换、添加流动性和移除流动性。Base Sepolia 部署已经上线，源码也已在 BaseScan 验证：
+
+- Factory：[`0xF152...c52c`](https://sepolia.basescan.org/address/0xF152af7227C16C3D0C06a52d0DAD088B743Fc52c#code)
+- Router：[`0xE3a1...E3E`](https://sepolia.basescan.org/address/0xE3a139469EBCE01E733718Be6faEA5b050CfdE3E#code)
+- Pair：[`0x22a9...Ed44`](https://sepolia.basescan.org/address/0x22a9b9bEa81Ff0D23a2844A82AFEd5732c18Ed44#code)
+- aETH：[`0xc144...AD33`](https://sepolia.basescan.org/address/0xc14423d1075815938d088738E824C9FcdC98AD33#code)
+- aUSD：[`0x3202...0FD3`](https://sepolia.basescan.org/address/0x32029b9294D0ce36Ef1c3398dED7Bb28F04C0FD3#code)
+- 前端预览：[ammora-1dki8bz93-are123123s-projects.vercel.app](https://ammora-1dki8bz93-are123123s-projects.vercel.app)

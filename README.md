@@ -80,7 +80,7 @@ or shell history.
 ```bash
 cast wallet import ammora-deployer
 export DEPLOYER_ADDRESS=$(cast wallet address --account ammora-deployer)
-pnpm contract:deploy:base-sepolia -- --account ammora-deployer --sender "$DEPLOYER_ADDRESS"
+pnpm contract:deploy:base-sepolia --account ammora-deployer --sender "$DEPLOYER_ADDRESS"
 ```
 
 The deployment command loads `BASE_SEPOLIA_RPC_URL` and `BASESCAN_API_KEY` from
@@ -106,5 +106,12 @@ application server or database is required.
 
 The implementation is feature-complete for its portfolio testnet scope. Local
 end-to-end validation covers deployment, faucet claims, swaps, adding liquidity
-and removing liquidity. Public Base Sepolia and Vercel URLs are populated only
-after the deployment credentials and external project configuration are ready.
+and removing liquidity. The Base Sepolia deployment is live and its source is
+verified on BaseScan:
+
+- Factory: [`0xF152...c52c`](https://sepolia.basescan.org/address/0xF152af7227C16C3D0C06a52d0DAD088B743Fc52c#code)
+- Router: [`0xE3a1...E3E`](https://sepolia.basescan.org/address/0xE3a139469EBCE01E733718Be6faEA5b050CfdE3E#code)
+- Pair: [`0x22a9...Ed44`](https://sepolia.basescan.org/address/0x22a9b9bEa81Ff0D23a2844A82AFEd5732c18Ed44#code)
+- aETH: [`0xc144...AD33`](https://sepolia.basescan.org/address/0xc14423d1075815938d088738E824C9FcdC98AD33#code)
+- aUSD: [`0x3202...0FD3`](https://sepolia.basescan.org/address/0x32029b9294D0ce36Ef1c3398dED7Bb28F04C0FD3#code)
+- Web preview: [ammora-1dki8bz93-are123123s-projects.vercel.app](https://ammora-1dki8bz93-are123123s-projects.vercel.app)
