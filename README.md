@@ -117,4 +117,4 @@ verified on BaseScan:
 - Pair: [`0x22a9...Ed44`](https://sepolia.basescan.org/address/0x22a9b9bEa81Ff0D23a2844A82AFEd5732c18Ed44#code)
 - aETH: [`0xc144...AD33`](https://sepolia.basescan.org/address/0xc14423d1075815938d088738E824C9FcdC98AD33#code)
 - aUSD: [`0x3202...0FD3`](https://sepolia.basescan.org/address/0x32029b9294D0ce36Ef1c3398dED7Bb28F04C0FD3#code)
-- Web preview: [ammora-1dki8bz93-are123123s-projects.vercel.app](https://ammora-1dki8bz93-are123123s-projects.vercel.app)
+- Web app: [ammora-dex.vercel.app](https://ammora-dex.vercel.app)
