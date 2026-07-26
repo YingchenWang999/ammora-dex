@@ -1,31 +1,41 @@
 import { baseSepoliaDeployment, isDeploymentConfigured } from '@ammora/contract-config'
 import { formatUnits } from 'viem'
 import type { AmmoraActions } from '../hooks/useAmmoraActions'
+import type { AmmoraActivityState } from '../hooks/useAmmoraActivity'
+import type { AmmoraAnalyticsState } from '../hooks/useAmmoraAnalytics'
 import type { AmmoraPoolState } from '../hooks/useAmmoraPool'
 import { useI18n } from '../i18n'
+import { mergeActivityItems } from '../lib/activity'
 import { formatTokenAmount } from '../lib/amm'
 import { PoolCurve } from './PoolCurve'
 
 type PoolProps = { pool: AmmoraPoolState }
+type AnalyticsProps = { analytics: AmmoraAnalyticsState }
 
 function Metric({ label, value, note }: { label: string; value: string; note: string }) {
   return <article className="metric-card"><span>{label}</span><strong>{value}</strong><small>{note}</small></article>
 }
 
-export function MarketWorkspace({ pool, progress }: PoolProps & { progress: number }) {
+export function MarketWorkspace({ pool, analytics, progress }: PoolProps & AnalyticsProps & { progress: number }) {
   const { t } = useI18n()
   const aEth = Number(formatUnits(pool.aEthReserve, 18))
   const aUsd = Number(formatUnits(pool.aUsdReserve, 18))
   const spot = aEth > 0 ? aUsd / aEth : 0
   const tvl = aUsd > 0 ? aUsd * 2 : 0
+  const analyticsNote = analytics.isLoading
+    ? t('dashboard.analyticsLoading')
+    : analytics.error ? t('dashboard.analyticsError')
+      : analytics.swapCount ? t('dashboard.analyticsLive') : t('dashboard.noSwaps')
+  const volume = Number(formatUnits(analytics.volumeAUsd, 18))
+  const fees = Number(formatUnits(analytics.feesAUsd, 18))
 
   return (
     <section className="market-workspace" aria-label={t('dashboard.marketWorkspace')}>
       <div className="metric-grid">
         <Metric label={t('dashboard.tvl')} value={tvl ? `${formatTokenAmount(tvl, 0)} aUSD` : '—'} note={tvl ? t('dashboard.liveOnchain') : t('dashboard.afterDeployment')} />
-        <Metric label={t('dashboard.volume')} value="—" note={t('dashboard.indexerRequired')} />
-        <Metric label={t('dashboard.fees')} value="—" note={t('dashboard.indexerRequired')} />
-        <Metric label={t('dashboard.apr')} value="—" note={t('dashboard.indexerRequired')} />
+        <Metric label={t('dashboard.volume')} value={analytics.isLoading || analytics.error ? '—' : `${formatTokenAmount(volume, 2)} aUSD`} note={analyticsNote} />
+        <Metric label={t('dashboard.fees')} value={analytics.isLoading || analytics.error ? '—' : `${formatTokenAmount(fees, 2)} aUSD`} note={analyticsNote} />
+        <Metric label={t('dashboard.apr')} value={analytics.isLoading || analytics.error ? '—' : `${analytics.aprPercent.toFixed(2)}%`} note={analytics.swapCount ? t('dashboard.aprEstimated') : analyticsNote} />
       </div>
       <PoolCurve
         invariant={aEth && aUsd ? formatTokenAmount(aEth * aUsd, 2) : t('pool.awaiting')}
@@ -37,7 +47,7 @@ export function MarketWorkspace({ pool, progress }: PoolProps & { progress: numb
   )
 }
 
-export function PoolsDirectory({ pool, onManage }: PoolProps & { onManage: () => void }) {
+export function PoolsDirectory({ pool, analytics, onManage }: PoolProps & AnalyticsProps & { onManage: () => void }) {
   const { t } = useI18n()
   const aEth = Number(formatUnits(pool.aEthReserve, 18))
   const aUsd = Number(formatUnits(pool.aUsdReserve, 18))
@@ -59,7 +69,7 @@ export function PoolsDirectory({ pool, onManage }: PoolProps & { onManage: () =>
           <div className="pair-cell"><span className="pair-icons"><i /><i /></span><span><strong>aETH / aUSD</strong><small>Base Sepolia · 0.30%</small></span></div>
           <strong>{aUsd ? `${formatTokenAmount(aUsd * 2, 0)} aUSD` : '—'}</strong>
           <span className="reserve-cell"><strong>{formatTokenAmount(aEth, 2)} aETH</strong><small>{formatTokenAmount(aUsd, 0)} aUSD</small></span>
-          <strong>—</strong>
+          <strong title={analytics.error?.message}>{analytics.isLoading || analytics.error ? '—' : `${analytics.aprPercent.toFixed(2)}%`}</strong>
           <strong>{share}%</strong>
           <button type="button" className="secondary-action" onClick={onManage}>{t('pools.manage')}</button>
         </div>
@@ -102,8 +112,9 @@ export function PortfolioPanel({ pool, isConnected, onConnect }: PoolProps & { i
   )
 }
 
-export function ActivityPanel({ actions }: { actions: AmmoraActions }) {
+export function ActivityPanel({ actions, activity, isConnected }: { actions: AmmoraActions; activity: AmmoraActivityState; isConnected: boolean }) {
   const { locale, t } = useI18n()
+  const items = mergeActivityItems(activity.items, actions.history)
   const labels = {
     claim: t('activity.claim'),
     swap: t('activity.swap'),
@@ -113,10 +124,10 @@ export function ActivityPanel({ actions }: { actions: AmmoraActions }) {
 
   return (
     <section className="dashboard-card activity-panel" aria-labelledby="activity-title">
-      <header className="section-heading"><div><span className="eyebrow">{t('activity.eyebrow')}</span><h1 id="activity-title">{t('activity.title')}</h1></div><span className="status-chip">{t('activity.session')}</span></header>
-      {actions.history.length ? (
+      <header className="section-heading"><div><span className="eyebrow">{t('activity.eyebrow')}</span><h1 id="activity-title">{t('activity.title')}</h1></div><span className="status-chip">{t('activity.onchain')}</span></header>
+      {items.length ? (
         <div className="activity-list">
-          {actions.history.map((item) => (
+          {items.map((item) => (
             <article key={item.id}>
               <span className="activity-signal">↗</span>
               <span><strong>{labels[item.kind]}</strong><small>{item.symbol ?? 'aETH / aUSD'}</small></span>
@@ -125,9 +136,14 @@ export function ActivityPanel({ actions }: { actions: AmmoraActions }) {
             </article>
           ))}
         </div>
-      ) : (
-        <div className="empty-state"><span>↗</span><h2>{t('activity.emptyTitle')}</h2><p>{t('activity.emptyDescription')}</p></div>
-      )}
+      ) : <ActivityEmptyState isConnected={isConnected} loading={activity.isLoading} error={activity.error} />}
     </section>
   )
+}
+
+function ActivityEmptyState({ isConnected, loading, error }: { isConnected: boolean; loading: boolean; error: Error | null }) {
+  const { t } = useI18n()
+  const title = !isConnected ? t('activity.connectTitle') : loading ? t('activity.loadingTitle') : error ? t('activity.errorTitle') : t('activity.emptyTitle')
+  const description = !isConnected ? t('activity.connectDescription') : loading ? t('activity.loadingDescription') : error ? t('activity.errorDescription') : t('activity.emptyDescription')
+  return <div className="empty-state" title={error?.message}><span>↗</span><h2>{title}</h2><p>{description}</p></div>
 }

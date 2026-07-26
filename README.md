@@ -32,13 +32,16 @@ ammora-dex/
 - Unit, fuzz and invariant-oriented Foundry tests
 - Live swap, liquidity and portfolio state in the React interface
 - Professional DEX dashboard with pool metrics, searchable token picker,
-  transaction settings, route preview and session activity with BaseScan links
+  transaction settings, route preview and wallet activity with BaseScan links
 - Dedicated Pools, Portfolio and Activity workspaces with responsive layouts
 - English and Simplified Chinese interface with a persistent language selector
+- Automatic fallback across multiple Base Sepolia RPC endpoints
 
-Metrics that require historical indexing (24-hour volume, fees and APR) are
-clearly marked as unavailable until an indexer is connected; the interface does
-not fabricate analytics data.
+The dashboard reads Pair `Swap`, `Mint` and `Burn` events directly from the
+Base Sepolia deployment block (`44638802`). It calculates real rolling 24-hour
+volume, 0.30% fees and an annualized LP APR estimate in the browser. Wallet
+activity is also reconstructed from Pair and faucet token events. No server,
+database or third-party indexing service is required.
 
 The first release deliberately excludes fee-on-transfer tokens, rebasing
 tokens, flash swaps, multi-hop routing and mainnet deployment.
@@ -97,8 +100,8 @@ five logged addresses into `.env.local`, then run `pnpm check` again.
 
 ## Deployment model
 
-The contracts will be deployed and verified on Base Sepolia. The static web
-application will be deployed to Vercel. Contract addresses are provided through
+The contracts are deployed and verified on Base Sepolia. The static web
+application is deployed to Vercel. Contract addresses are provided through
 environment variables and the shared `@ammora/contract-config` package, so no
 application server or database is required.
 

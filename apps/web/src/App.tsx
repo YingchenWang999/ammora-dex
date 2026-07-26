@@ -7,6 +7,8 @@ import { ActivityPanel, MarketWorkspace, PoolsDirectory, PortfolioPanel } from '
 import { SwapPanel } from './components/SwapPanel'
 import { openWalletKit, walletKitConfigured } from './config/wagmi'
 import { useAmmoraActions } from './hooks/useAmmoraActions'
+import { useAmmoraActivity } from './hooks/useAmmoraActivity'
+import { useAmmoraAnalytics } from './hooks/useAmmoraAnalytics'
 import { useAmmoraPool } from './hooks/useAmmoraPool'
 import { useI18n, type Locale } from './i18n'
 import './styles/app.scss'
@@ -23,6 +25,8 @@ function AmmoraExperience({ onConnect, walletReady }: AmmoraExperienceProps) {
   const { address, isConnected } = useAccount()
   const pool = useAmmoraPool(address)
   const actions = useAmmoraActions(pool)
+  const analytics = useAmmoraAnalytics(pool.aUsdReserve)
+  const activity = useAmmoraActivity(address)
   const [curveProgress, setCurveProgress] = useState(0.32)
   const [view, setView] = useState<View>('trade')
   const [networkOpen, setNetworkOpen] = useState(false)
@@ -75,19 +79,19 @@ function AmmoraExperience({ onConnect, walletReady }: AmmoraExperienceProps) {
 
         {view === 'trade' && <>
           <section className="trading-dashboard" aria-label={t('layout.tokenSwap')}>
-            <MarketWorkspace pool={pool} progress={curveProgress} />
+            <MarketWorkspace pool={pool} analytics={analytics} progress={curveProgress} />
             <SwapPanel actions={actions} onProgressChange={updateCurve} onConnect={onConnect} pool={pool} isConnected={isConnected} walletReady={walletReady} />
           </section>
           <section className="quick-start"><div><span className="eyebrow">{t('dashboard.quickStart')}</span><h2>{t('dashboard.needAssets')}</h2><p>{t('dashboard.needAssetsDescription')}</p></div><FaucetPanel actions={actions} isConnected={isConnected} onConnect={onConnect} pool={pool} walletReady={walletReady} /></section>
         </>}
 
         {view === 'pools' && <div className="page-stack">
-          <PoolsDirectory pool={pool} onManage={manageLiquidity} />
+          <PoolsDirectory pool={pool} analytics={analytics} onManage={manageLiquidity} />
           <div id="liquidity-manager"><LiquidityPanel actions={actions} isConnected={isConnected} onConnect={onConnect} pool={pool} walletReady={walletReady} /></div>
         </div>}
 
         {view === 'portfolio' && <div className="portfolio-grid"><PortfolioPanel pool={pool} isConnected={isConnected} onConnect={onConnect} /><FaucetPanel actions={actions} isConnected={isConnected} onConnect={onConnect} pool={pool} walletReady={walletReady} /></div>}
-        {view === 'activity' && <ActivityPanel actions={actions} />}
+        {view === 'activity' && <ActivityPanel actions={actions} activity={activity} isConnected={isConnected} />}
       </main>
 
       <footer><span>{t('footer.protocol')}</span><span>{t('footer.built')}</span><span>{t('footer.openSource')}</span></footer>

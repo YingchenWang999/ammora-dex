@@ -5,20 +5,13 @@ import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from 'w
 import type { Address, Hash } from 'viem'
 import { ammoraPairAbi, ammoraRouterAbi, demoTokenAbi } from '../contracts/abis'
 import { useI18n, type TranslationKey } from '../i18n'
+import type { ActivityItem } from '../lib/activity'
 import type { AmmoraPoolState } from './useAmmoraPool'
 
 export type TransactionStatus = {
   tone: 'idle' | 'pending' | 'success' | 'error'
   message: string
   hash?: Hash
-}
-
-export type ActivityItem = {
-  id: string
-  kind: 'claim' | 'swap' | 'add' | 'remove'
-  symbol?: string
-  hash: Hash
-  timestamp: number
 }
 
 const initialStatus: TransactionStatus = { tone: 'idle', message: '' }

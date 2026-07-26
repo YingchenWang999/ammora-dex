@@ -1,15 +1,27 @@
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { baseSepolia } from '@reown/appkit/networks'
-import { createPublicClient, http } from 'viem'
+import { createPublicClient, fallback, http } from 'viem'
 import { baseSepolia as viemBaseSepolia } from 'viem/chains'
 
 export const walletKitConfigured = Boolean(import.meta.env.VITE_REOWN_PROJECT_ID)
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'ammora-local-preview'
-const rpcUrl = import.meta.env.VITE_BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org'
+const rpcUrls = [...new Set([
+  import.meta.env.VITE_BASE_SEPOLIA_RPC_URL,
+  'https://sepolia.base.org',
+  'https://base-sepolia-rpc.publicnode.com',
+].filter((url): url is string => Boolean(url)))]
+
+function baseSepoliaTransport() {
+  return fallback(rpcUrls.map((url) => http(url, {
+    retryCount: 2,
+    retryDelay: 500,
+    timeout: 10_000,
+  })))
+}
 
 export const publicClient = createPublicClient({
   chain: viemBaseSepolia,
-  transport: http(rpcUrl),
+  transport: baseSepoliaTransport(),
 })
 
 const metadata = {
@@ -24,7 +36,7 @@ export const wagmiAdapter = new WagmiAdapter({
   projectId,
   ssr: false,
   transports: {
-    [baseSepolia.id]: http(rpcUrl),
+    [baseSepolia.id]: baseSepoliaTransport(),
   },
 })
 

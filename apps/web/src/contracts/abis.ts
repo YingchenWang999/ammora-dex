@@ -106,6 +106,53 @@ export const ammoraPairAbi = [
   },
 ] as const
 
+export const ammoraSwapEvent = {
+  type: 'event',
+  name: 'Swap',
+  inputs: [
+    { name: 'sender', type: 'address', indexed: true },
+    { name: 'amount0In', type: 'uint256', indexed: false },
+    { name: 'amount1In', type: 'uint256', indexed: false },
+    { name: 'amount0Out', type: 'uint256', indexed: false },
+    { name: 'amount1Out', type: 'uint256', indexed: false },
+    { name: 'to', type: 'address', indexed: true },
+  ],
+} as const
+
+export const ammoraMintEvent = {
+  type: 'event',
+  name: 'Mint',
+  inputs: [
+    { name: 'sender', type: 'address', indexed: true },
+    { name: 'amount0', type: 'uint256', indexed: false },
+    { name: 'amount1', type: 'uint256', indexed: false },
+    { name: 'to', type: 'address', indexed: true },
+  ],
+} as const
+
+export const ammoraBurnEvent = {
+  type: 'event',
+  name: 'Burn',
+  inputs: [
+    { name: 'sender', type: 'address', indexed: true },
+    { name: 'amount0', type: 'uint256', indexed: false },
+    { name: 'amount1', type: 'uint256', indexed: false },
+    { name: 'to', type: 'address', indexed: true },
+  ],
+} as const
+
+export const erc20TransferEvent = {
+  type: 'event',
+  name: 'Transfer',
+  inputs: [
+    { name: 'from', type: 'address', indexed: true },
+    { name: 'to', type: 'address', indexed: true },
+    { name: 'value', type: 'uint256', indexed: false },
+  ],
+} as const
+
+export const ammoraPairEventsAbi = [ammoraSwapEvent, ammoraMintEvent, ammoraBurnEvent] as const
+
 export const demoTokenAbi = [
   {
     type: 'function',
