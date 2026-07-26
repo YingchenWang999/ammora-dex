@@ -63,16 +63,20 @@ project ID separately enables wallet connections and transactions.
 
 ## Base Sepolia deployment
 
-Use a dedicated, funded Base Sepolia deployment wallet. Set the variables in
-your local shell; never paste a private key into a committed file or a
-`VITE_`-prefixed variable.
+Use a dedicated, funded Base Sepolia deployment wallet. The recommended route
+is an encrypted Foundry keystore, so the private key never enters the project
+or shell history.
 
 ```bash
+cast wallet import ammora-deployer
+export DEPLOYER_ADDRESS=$(cast wallet address --account ammora-deployer)
 export BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
 export BASESCAN_API_KEY=your_basescan_key
-export PRIVATE_KEY=your_dedicated_testnet_private_key
-pnpm contract:deploy:base-sepolia
+pnpm contract:deploy:base-sepolia -- --account ammora-deployer --sender "$DEPLOYER_ADDRESS"
 ```
+
+`PRIVATE_KEY` remains an optional local-only fallback for automated testnet
+deployments. Never paste it into chat, commit it, or prefix it with `VITE_`.
 
 The deployment is broadcast sequentially and performs the full setup in one
 run: factory, router, aETH, aUSD, pair creation and initial liquidity. Copy the

@@ -23,10 +23,15 @@ contract Deploy is Script {
             AmmoraPair pair
         )
     {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.addr(deployerPrivateKey);
-
-        vm.startBroadcast(deployerPrivateKey);
+        uint256 deployerPrivateKey = vm.envOr("PRIVATE_KEY", uint256(0));
+        address deployer;
+        if (deployerPrivateKey == 0) {
+            deployer = vm.envAddress("DEPLOYER_ADDRESS");
+            vm.startBroadcast();
+        } else {
+            deployer = vm.addr(deployerPrivateKey);
+            vm.startBroadcast(deployerPrivateKey);
+        }
         factory = new AmmoraFactory();
         router = new AmmoraRouter(address(factory));
         aEth = new DemoToken("Ammora Test ETH", "aETH", 10 ether, deployer);
