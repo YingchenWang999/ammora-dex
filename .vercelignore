@@ -1,6 +1,6 @@
-.git
-.github
-.vercel
-node_modules
-apps/web/dist
-contracts
+/.git
+/.github
+/.vercel
+/node_modules
+/apps/web/dist
+/contracts
