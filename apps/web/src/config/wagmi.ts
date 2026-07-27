@@ -5,21 +5,23 @@ import { baseSepolia as viemBaseSepolia } from 'viem/chains'
 
 export const walletKitConfigured = Boolean(import.meta.env.VITE_REOWN_PROJECT_ID)
 const projectId = import.meta.env.VITE_REOWN_PROJECT_ID || 'ammora-local-preview'
+const officialPublicRpc = 'https://sepolia.base.org'
+const configuredRpc = import.meta.env.VITE_BASE_SEPOLIA_RPC_URL?.replace(/\/+$/, '')
 const rpcUrls = [...new Set([
-  import.meta.env.VITE_BASE_SEPOLIA_RPC_URL,
-  'https://sepolia.base.org',
+  configuredRpc && configuredRpc !== officialPublicRpc ? configuredRpc : undefined,
   'https://base-sepolia.drpc.org',
+  officialPublicRpc,
 ].filter((url): url is string => Boolean(url)))]
 
 function baseSepoliaTransport() {
   return fallback(rpcUrls.map((url) => http(url, {
-    retryCount: 2,
-    retryDelay: 500,
+    retryCount: 0,
     timeout: 10_000,
-  })))
+  })), { retryCount: 0 })
 }
 
 export const publicClient = createPublicClient({
+  batch: { multicall: { wait: 16 } },
   chain: viemBaseSepolia,
   transport: baseSepoliaTransport(),
 })

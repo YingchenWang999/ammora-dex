@@ -1,7 +1,7 @@
 import { encodeAbiParameters, encodeEventTopics, parseAbiParameters } from 'viem'
 import { describe, expect, it } from 'vitest'
 import { ammoraSwapEvent } from '../contracts/abis'
-import { calculateAmmoraAnalytics, createBlockRanges, LOG_BLOCK_CHUNK_SIZE, parseAmmoraPairLog } from './analytics'
+import { calculateAmmoraAnalytics, createBlockRanges, LOG_BLOCK_CHUNK_SIZE, mapWithConcurrency, parseAmmoraPairLog } from './analytics'
 
 const unit = 10n ** 18n
 
@@ -36,6 +36,21 @@ describe('Ammora onchain analytics', () => {
     ])
     expect(createBlockRanges(20n, 19n)).toEqual([])
     expect(LOG_BLOCK_CHUNK_SIZE).toBeLessThanOrEqual(2_000n)
+  })
+
+  it('limits concurrent RPC work while preserving result order', async () => {
+    let active = 0
+    let peak = 0
+    const results = await mapWithConcurrency([1, 2, 3, 4, 5], 2, async (value) => {
+      active += 1
+      peak = Math.max(peak, active)
+      await new Promise((resolve) => setTimeout(resolve, value % 2 ? 4 : 1))
+      active -= 1
+      return value * 10
+    })
+
+    expect(peak).toBeLessThanOrEqual(2)
+    expect(results).toEqual([10, 20, 30, 40, 50])
   })
 
   it('decodes a raw Swap event log into typed amounts', () => {

@@ -7,46 +7,45 @@ import {
   BASE_BLOCKS_PER_DAY,
   calculateAmmoraAnalytics,
   createBlockRanges,
+  mapWithConcurrency,
 } from '../lib/analytics'
 
 export function useAmmoraAnalytics(aUsdReserve: bigint) {
+  const aUsdIsToken0 = BigInt(baseSepoliaDeployment.aUsd) < BigInt(baseSepoliaDeployment.aEth)
   const query = useQuery({
-    queryKey: ['ammora-analytics', aUsdReserve.toString()],
+    queryKey: ['ammora-analytics'],
     enabled: isDeploymentConfigured,
-    staleTime: 15_000,
-    refetchInterval: 30_000,
-    retry: 2,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    retry: 1,
     queryFn: async () => {
       const latestBlock = await publicClient.getBlockNumber()
       const rollingStart = latestBlock > BASE_BLOCKS_PER_DAY ? latestBlock - BASE_BLOCKS_PER_DAY + 1n : 0n
       const fromBlock = rollingStart > AMMORA_DEPLOYMENT_BLOCK ? rollingStart : AMMORA_DEPLOYMENT_BLOCK
       const ranges = createBlockRanges(fromBlock, latestBlock)
-      const swapGroups = await Promise.all(ranges.map((range) => publicClient.getLogs({
+      const swapGroups = await mapWithConcurrency(ranges, 2, (range) => publicClient.getLogs({
         address: baseSepoliaDeployment.pair,
         event: ammoraSwapEvent,
         ...range,
-      })))
+      }))
       const logs = swapGroups.flat()
-      const aUsdIsToken0 = BigInt(baseSepoliaDeployment.aUsd) < BigInt(baseSepoliaDeployment.aEth)
 
       return {
-        ...calculateAmmoraAnalytics(logs.map((log) => ({
+        swaps: logs.map((log) => ({
           amount0In: log.args.amount0In ?? 0n,
           amount1In: log.args.amount1In ?? 0n,
           amount0Out: log.args.amount0Out ?? 0n,
           amount1Out: log.args.amount1Out ?? 0n,
-        })), aUsdIsToken0, aUsdReserve),
+        })),
         fromBlock,
         toBlock: latestBlock,
       }
     },
   })
+  const analytics = calculateAmmoraAnalytics(query.data?.swaps ?? [], aUsdIsToken0, aUsdReserve)
 
   return {
-    volumeAUsd: query.data?.volumeAUsd ?? 0n,
-    feesAUsd: query.data?.feesAUsd ?? 0n,
-    aprPercent: query.data?.aprPercent ?? 0,
-    swapCount: query.data?.swapCount ?? 0,
+    ...analytics,
     fromBlock: query.data?.fromBlock,
     toBlock: query.data?.toBlock,
     isLoading: query.isLoading,

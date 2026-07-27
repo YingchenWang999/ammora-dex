@@ -66,12 +66,12 @@ export function PoolsDirectory({ pool, analytics, onManage }: PoolProps & Analyt
           <span role="columnheader">{t('pools.pool')}</span><span role="columnheader">{t('dashboard.tvl')}</span><span role="columnheader">{t('pools.reserves')}</span><span role="columnheader">{t('dashboard.apr')}</span><span role="columnheader">{t('pools.yourShare')}</span><span role="columnheader" aria-label={t('pools.manage')} />
         </div>
         <div className="pool-table__row" role="row">
-          <div className="pair-cell" role="cell"><span className="pair-icons"><i /><i /></span><span><strong>aETH / aUSD</strong><small>Base Sepolia · 0.30%</small></span></div>
-          <strong role="cell">{aUsd ? `${formatTokenAmount(aUsd * 2, 0)} aUSD` : '—'}</strong>
-          <span className="reserve-cell" role="cell"><strong>{formatTokenAmount(aEth, 2)} aETH</strong><small>{formatTokenAmount(aUsd, 0)} aUSD</small></span>
-          <strong role="cell" title={analytics.error?.message}>{analytics.isLoading || analytics.error ? '—' : `${analytics.aprPercent.toFixed(2)}%`}</strong>
-          <strong role="cell">{share}%</strong>
-          <span role="cell"><button type="button" className="secondary-action" onClick={onManage}>{t('pools.manage')}</button></span>
+          <div className="pair-cell" role="cell" data-label={t('pools.pool')}><span className="pair-icons"><i /><i /></span><span><strong>aETH / aUSD</strong><small>Base Sepolia · 0.30%</small></span></div>
+          <strong role="cell" data-label={t('dashboard.tvl')}>{aUsd ? `${formatTokenAmount(aUsd * 2, 0)} aUSD` : '—'}</strong>
+          <span className="reserve-cell" role="cell" data-label={t('pools.reserves')}><strong>{formatTokenAmount(aEth, 2)} aETH</strong><small>{formatTokenAmount(aUsd, 0)} aUSD</small></span>
+          <strong role="cell" data-label={t('dashboard.apr')} title={analytics.error?.message}>{analytics.isLoading || analytics.error ? '—' : `${analytics.aprPercent.toFixed(2)}%`}</strong>
+          <strong role="cell" data-label={t('pools.yourShare')}>{share}%</strong>
+          <span role="cell" className="pool-table__action"><button type="button" className="secondary-action" onClick={onManage}>{t('pools.manage')}</button></span>
         </div>
       </div>
       <div className="contract-links">

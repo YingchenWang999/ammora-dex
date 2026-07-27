@@ -1317,12 +1317,12 @@ main { padding-top: 18px; }
 .quick-start .eyebrow { color: var(--aqua); }
 .quick-start .faucet-panel { margin: 0; box-shadow: none; }
 
-.page-stack { display: grid; gap: 18px; }
-.dashboard-card { padding: 26px; }
+.page-stack { display: grid; min-width: 0; gap: 18px; }
+.dashboard-card { min-width: 0; padding: 26px; }
 .section-heading { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-bottom: 24px; }
 .status-chip { display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; color: #9d4d3b; font-size: 0.62rem; font-weight: 800; background: rgb(255 118 87 / 9%); border-radius: 999px; }
 .status-chip.is-live { color: #087b68; background: rgb(83 216 201 / 14%); }
-.pool-table { overflow-x: auto; }
+.pool-table { max-width: 100%; overflow-x: auto; }
 .pool-table__head,
 .pool-table__row { display: grid; grid-template-columns: minmax(190px, 1.5fr) 1fr 1.1fr .7fr .8fr auto; gap: 18px; align-items: center; min-width: 900px; padding: 15px; }
 .pool-table__head { color: var(--muted); font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; border-bottom: 1px solid var(--line); }
@@ -1416,6 +1416,53 @@ footer { margin-top: 18px; border-top: 1px solid var(--line); }
   .dashboard-card { padding: 20px; border-radius: 17px; }
   .curve-panel { min-height: 0; }
   .quick-start { padding: 20px; }
+  .pools-directory .section-heading { align-items: center; }
+  .pool-table { overflow: visible; }
+  .pool-table__head { display: none; }
+  .pool-table__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #f8faff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .pool-table__row > [role='cell'] {
+    display: flex;
+    min-width: 0;
+    min-height: 72px;
+    padding: 12px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pool-table__row > [role='cell']:nth-child(even):not(.pool-table__action) { border-right: 1px solid var(--line); }
+  .pool-table__row > [role='cell']::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.56rem;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .pool-table__row .pair-cell {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-column: 1 / -1;
+    min-height: 84px;
+    border-right: 0;
+  }
+  .pool-table__row .pair-cell::before { grid-column: 1 / -1; }
+  .pool-table__row .pool-table__action {
+    grid-column: 1 / -1;
+    min-height: 68px;
+    border-bottom: 0;
+  }
+  .pool-table__action::before { display: none; }
+  .pool-table__action .secondary-action { width: 100%; }
   .contract-links { flex-wrap: wrap; }
   .activity-list article { grid-template-columns: auto 1fr auto; }
   .activity-list article a { grid-column: 2 / -1; }
