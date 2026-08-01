@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 pragma solidity 0.8.36;
 
 import { Script, console2 } from "forge-std/Script.sol";

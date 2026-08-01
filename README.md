@@ -118,3 +118,7 @@ verified on BaseScan:
 - aETH: [`0xc144...AD33`](https://sepolia.basescan.org/address/0xc14423d1075815938d088738E824C9FcdC98AD33#code)
 - aUSD: [`0x3202...0FD3`](https://sepolia.basescan.org/address/0x32029b9294D0ce36Ef1c3398dED7Bb28F04C0FD3#code)
 - Web app: [ammora-dex.vercel.app](https://ammora-dex.vercel.app)
+
+## License
+
+Except for third-party components that retain their own licenses, the original code in this version and later versions of this project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). Commercial use requires separate written permission from the repository owner. Versions published before 2026-08-01 remain available under the license included with those versions.

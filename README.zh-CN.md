@@ -97,3 +97,7 @@ pnpm contract:deploy:base-sepolia --account ammora-deployer --sender "$DEPLOYER_
 - aETH：[`0xc144...AD33`](https://sepolia.basescan.org/address/0xc14423d1075815938d088738E824C9FcdC98AD33#code)
 - aUSD：[`0x3202...0FD3`](https://sepolia.basescan.org/address/0x32029b9294D0ce36Ef1c3398dED7Bb28F04C0FD3#code)
 - 正式站点：[ammora-dex.vercel.app](https://ammora-dex.vercel.app)
+
+## 许可证
+
+除明确保留各自许可证的第三方组件外，本项目当前版本及后续版本的原创代码采用 [PolyForm Noncommercial License 1.0.0](LICENSE)。商业使用必须事先获得仓库所有者的单独书面许可。2026-08-01 之前发布的历史版本继续适用其发布时附带的许可证。
